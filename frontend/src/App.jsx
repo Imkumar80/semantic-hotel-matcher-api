@@ -4,7 +4,7 @@ import { Search, MapPin, Star, ShieldCheck, Users, Bed, Eye, Info } from 'lucide
 
 function GridBackground({ children }) {
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white dark:bg-black overflow-hidden dark text-white">
+    <div className="relative flex h-screen w-full flex-col bg-white dark:bg-black overflow-hidden dark text-white">
       <div
         className={cn(
           "fixed inset-0 z-0",
@@ -19,7 +19,7 @@ function GridBackground({ children }) {
       <div className="fixed top-[-20%] right-[-10%] w-[40rem] h-[40rem] rounded-full bg-blue-500/20 blur-[100px] z-0 pointer-events-none"></div>
       <div className="fixed bottom-[-20%] left-[-10%] w-[40rem] h-[40rem] rounded-full bg-purple-500/20 blur-[100px] z-0 pointer-events-none"></div>
       
-      <div className="relative z-10 flex flex-col w-full h-full min-h-screen">
+      <div className="relative z-10 flex flex-col w-full h-full">
         {children}
       </div>
     </div>
@@ -92,7 +92,7 @@ export default function App() {
       <div className="flex-1 max-w-[1600px] mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-80px)]">
         
         {/* Sidebar */}
-        <div className="lg:col-span-4 flex flex-col bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="lg:col-span-4 flex flex-col bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl min-h-0">
           <div className="p-5 border-b border-white/10">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -143,7 +143,7 @@ export default function App() {
         </div>
 
         {/* Main Content */}
-        <div className="lg:col-span-8 bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col relative">
+        <div className="lg:col-span-8 bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col relative min-h-0">
           {loadingDetails ? (
             <div className="flex items-center justify-center h-full">
               <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>

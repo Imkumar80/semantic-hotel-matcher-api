@@ -4,6 +4,10 @@ import json
 import uuid
 import pickle
 import os
+import sys
+
+# Import our new deduplicator
+from amenity_normalizer import deduplicate_amenities
 
 def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df_b, near_misses):
     canonical = {}
@@ -70,11 +74,11 @@ def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df
         canonical['stars'] = ",".join(map(str, stars))
         canonical['stars_conflict'] = True
         
-    # Amenities (Union)
-    all_amenities = set()
+    # Amenities
+    raw_amenities = []
     for h in cluster_hotels:
-        all_amenities.update(h.get('amenities_list', []))
-    canonical['amenities'] = list(all_amenities)
+        raw_amenities.extend(h.get('amenities_list', []))
+    canonical['amenities'] = deduplicate_amenities(raw_amenities)
     
     # Images
     all_images = set()

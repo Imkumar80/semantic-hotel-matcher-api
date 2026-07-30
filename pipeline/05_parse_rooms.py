@@ -5,6 +5,7 @@ import os
 import json
 import re
 import pickle
+import time
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
@@ -144,10 +145,14 @@ def main():
     print(f"To be resolved by LLM: {len(unresolved_names)}")
     
     # Batch LLM
-    batch_size = 50
+    batch_size = 20
     for i in range(0, len(unresolved_names), batch_size):
         batch = unresolved_names[i:i+batch_size]
+        print(f"Processing batch {i//batch_size + 1}/{(len(unresolved_names)//batch_size)+1}...")
         results = batch_llm_parse(batch, client, llm_model)
+        
+        # Free-tier rate limit (15 RPM). We sleep 15s to be extremely safe.
+        time.sleep(15)
         
         # Ensure results match batch size (fallback in case of strict schema failure)
         if len(results) != len(batch):
