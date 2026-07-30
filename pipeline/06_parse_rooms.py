@@ -9,6 +9,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from typing import List, Optional
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 class ParsedRoom(BaseModel):
     capacity: Optional[int]
@@ -67,6 +68,19 @@ def regex_parse(name: str):
     parsed['features'] = list(parsed['features'])
     return is_resolved, parsed
 
+@retry(wait=wait_exponential(multiplier=2, min=15, max=70), stop=stop_after_attempt(10))
+def call_gemini_rooms(client, model_name, prompt):
+    return client.models.generate_content(
+        model=model_name,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction="You parse hotel room names into structured JSON arrays of objects.",
+            response_mime_type="application/json",
+            response_schema=BatchParsedRoom,
+            temperature=0.0
+        )
+    )
+
 def batch_llm_parse(names, client, model_name):
     if not client:
         return [ParsedRoom(capacity=None, bed_type=None, view=None, features=[], room_class=None) for _ in names]
@@ -76,16 +90,7 @@ def batch_llm_parse(names, client, model_name):
         prompt += f"{i+1}. {n}\n"
         
     try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction="You parse hotel room names into structured JSON arrays of objects.",
-                response_mime_type="application/json",
-                response_schema=BatchParsedRoom,
-                temperature=0.0
-            )
-        )
+        response = call_gemini_rooms(client, model_name, prompt)
         response_obj = response.parsed
         if not response_obj:
             response_obj = BatchParsedRoom.model_validate_json(response.text)

@@ -1,6 +1,6 @@
 matching:
   auto_match_threshold: 0.92
-  llm_review_threshold: 0.75      # below this = no match, no LLM call
+  llm_review_threshold: 0.84      # below this = no match, no LLM call
   radius_meters: 250
   max_candidates_per_hotel: 10
 

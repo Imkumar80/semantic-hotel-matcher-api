@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Away: Semantic Hotel Matcher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: rgba(22, 27, 34, 0.7);
+            --surface-hover: rgba(33, 38, 45, 0.9);
+            --primary: #58a6ff;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --border: #30363d;
+            --star: #e3b341;
+            --glass: blur(12px);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1f2937, var(--bg));
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        nav {
+            backdrop-filter: var(--glass);
+            -webkit-backdrop-filter: var(--glass);
+            background: rgba(13, 17, 23, 0.8);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        nav h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: #fff;
+        }
+
+        nav h1 span {
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+        }
+
+        .search-panel {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            -webkit-backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: #010409;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+        }
+
+        .hotel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .hotel-card {
+            padding: 1rem;
+            background: rgba(22, 27, 34, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hotel-card:hover {
+            background: var(--surface-hover);
+            transform: translateY(-2px);
+        }
+
+        .hotel-card h3 {
+            margin: 0 0 0.4rem 0;
+            font-size: 0.95rem;
+            color: #fff;
+        }
+
+        .hotel-card p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hotel-card .stars {
+            color: var(--star);
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+        }
+
+        .details-panel {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            -webkit-backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .image-gallery {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+
+        .image-gallery img {
+            height: 200px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .rooms-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .rooms-table th, .rooms-table td {
+            text-align: left;
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .rooms-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            background: rgba(1, 4, 9, 0.3);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .badge-canonical {
+            background: rgba(46, 160, 67, 0.2);
+            color: #3fb950;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .search-panel {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h1>Away <span>Canonical Hotels</span></h1>
+    </nav>
+
+    <div class="container">
+        <!-- Sidebar: Search -->
+        <div class="search-panel">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search Bangalore hotels..." autocomplete="off">
+            <div id="hotelList" class="hotel-list">
+                <div class="loading">Loading hotels...</div>
+            </div>
+        </div>
+
+        <!-- Main: Details -->
+        <div class="details-panel" id="detailsPanel">
+            <div class="placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.5; margin-bottom: 1rem;">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <h2>Select a hotel</h2>
+                <p>Browse the canonical merged data</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const hotelList = document.getElementById('hotelList');
+        const detailsPanel = document.getElementById('detailsPanel');
+
+        let debounceTimer;
+
+        async function fetchHotels(query = '') {
+            hotelList.innerHTML = '<div class="loading">Searching...</div>';
+            try {
+                const res = await fetch(`/hotels?search=${encodeURIComponent(query)}&size=30`);
+                const data = await res.json();
+                renderList(data.items);
+            } catch (e) {
+                hotelList.innerHTML = '<div class="loading" style="color: #f85149;">Error loading hotels</div>';
+            }
+        }
+
+        function renderList(hotels) {
+            if (hotels.length === 0) {
+                hotelList.innerHTML = '<div class="loading">No hotels found.</div>';
+                return;
+            }
+
+            hotelList.innerHTML = hotels.map(h => `
+                <div class="hotel-card" onclick="loadHotel('${h.id}')">
+                    <h3>${h.name}</h3>
+                    <p>${h.address}</p>
+                    <div class="stars">${'★'.repeat(Math.round(h.stars || 0))}${h.stars ? '' : 'Unrated'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadHotel(id) {
+            detailsPanel.innerHTML = '<div class="placeholder"><div class="loading">Loading details...</div></div>';
+            try {
+                const res = await fetch(`/hotels/${id}`);
+                const h = await res.json();
+                
+                let imagesHtml = '';
+                if (h.image_urls && h.image_urls.length > 0) {
+                    imagesHtml = `
+                        <div class="image-gallery">
+                            ${h.image_urls.slice(0, 5).map(url => `<img src="${url}" alt="Hotel Image" onerror="this.style.display='none'">`).join('')}
+                        </div>
+                    `;
+                }
+
+                let amenitiesHtml = '';
+                if (h.amenities && h.amenities.length > 0) {
+                    amenitiesHtml = `
+                        <div class="tags">
+                            ${h.amenities.map(a => `<span class="tag">${a}</span>`).join('')}
+                        </div>
+                    `;
+                }
+
+                let roomsHtml = '<p style="color: var(--text-muted); font-size: 0.9rem;">No parsed rooms available.</p>';
+                if (h.matched_rooms && h.matched_rooms.length > 0) {
+                    roomsHtml = `
+                        <table class="rooms-table">
+                            <thead>
+                                <tr>
+                                    <th>Match Confidence</th>
+                                    <th>Supplier A Room</th>
+                                    <th>Supplier B Room</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${h.matched_rooms.map(r => `
+                                    <tr>
+                                        <td><span class="tag" style="background: rgba(46, 160, 67, 0.1); color: #3fb950;">${(r.score * 100).toFixed(0)}%</span></td>
+                                        <td style="font-family: monospace; font-size: 0.8rem;">${r.room_a_id}</td>
+                                        <td style="font-family: monospace; font-size: 0.8rem;">${r.room_b_id}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+
+                detailsPanel.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h2 style="margin: 0 0 0.5rem 0; color: #fff;">${h.name} <span class="badge-canonical">Canonical</span></h2>
+                            <p style="margin: 0; color: var(--text-muted);">${h.address}</p>
+                            <p style="margin: 0.5rem 0; color: var(--star);">${'★'.repeat(Math.round(h.stars || 0))} 
+                                <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 1rem;">Match Confidence: ${(h.confidence * 100).toFixed(1)}%</span>
+                            </p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="badge-canonical" style="background: var(--surface); color: var(--text-muted); font-weight: normal; border: 1px solid var(--border);">Source A: ${h.source_a_id || 'N/A'}</span>
+                            <div style="margin-top: 0.4rem;"></div>
+                            <span class="badge-canonical" style="background: var(--surface); color: var(--text-muted); font-weight: normal; border: 1px solid var(--border);">Source B: ${h.source_b_id || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    ${imagesHtml}
+                    ${amenitiesHtml}
+
+                    <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                        <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; color: #fff;">Aligned Rooms</h3>
+                        ${roomsHtml}
+                    </div>
+                `;
+            } catch (e) {
+                detailsPanel.innerHTML = '<div class="placeholder" style="color: #f85149;">Error loading hotel details</div>';
+            }
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                fetchHotels(e.target.value);
+            }, 300);
+        });
+
+        // Initial load
+        fetchHotels();
+    </script>
+</body>
+</html>
