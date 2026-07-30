@@ -7,7 +7,7 @@ A high-performance pipeline and API for resolving disjoint, messy hotel supplier
 The entire pipeline and API are fully dockerized. To build the SQLite database and start the web server in one command:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 *(Note: If you want to rebuild the database from scratch and hit the LLM/Embeddings, provide a `.env` with `GEMINI_API_KEY` and run `uv run pipeline/run_all.py` first).*
 
