@@ -5,12 +5,19 @@ class NearMiss(BaseModel):
     miss_id: str
     score: float
 
+class RoomDetail(BaseModel):
+    id: str
+    name: Optional[str]
+    capacity: Optional[int]
+    bed_type: Optional[str]
+    view: Optional[str]
+    features: List[str]
+    room_class: Optional[str]
+
 class MatchedRoom(BaseModel):
-    hotel_a_id: str
-    hotel_b_id: str
-    room_a_id: str
-    room_b_id: str
     score: float
+    room_a: RoomDetail
+    room_b: RoomDetail
 
 class CanonicalHotelSummary(BaseModel):
     id: str

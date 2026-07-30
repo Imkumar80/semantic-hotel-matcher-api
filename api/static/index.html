@@ -3,145 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Away: Semantic Hotel Matcher</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Away: Canonical Hotels</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0d1117;
-            --surface: rgba(22, 27, 34, 0.7);
-            --surface-hover: rgba(33, 38, 45, 0.9);
-            --primary: #58a6ff;
-            --text: #c9d1d9;
-            --text-muted: #8b949e;
-            --border: #30363d;
-            --star: #e3b341;
-            --glass: blur(12px);
+            --bg-grad-start: #0f172a;
+            --bg-grad-end: #1e1b4b;
+            --surface: rgba(30, 41, 59, 0.4);
+            --surface-hover: rgba(30, 41, 59, 0.7);
+            --border: rgba(148, 163, 184, 0.15);
+            --primary: #60a5fa;
+            --primary-glow: rgba(96, 165, 250, 0.5);
+            --accent: #c084fc;
+            --success: #34d399;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass: blur(16px);
+            --star: #fbbf24;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top right, #1f2937, var(--bg));
-            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-start), var(--bg-grad-end));
+            background-attachment: fixed;
+            color: var(--text-main);
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            opacity: 0.15;
+            z-index: -1;
+            filter: blur(50px);
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -100px;
+            left: -100px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            opacity: 0.1;
+            z-index: -1;
+            filter: blur(60px);
         }
 
         nav {
             backdrop-filter: var(--glass);
             -webkit-backdrop-filter: var(--glass);
-            background: rgba(13, 17, 23, 0.8);
+            background: rgba(15, 23, 42, 0.6);
             border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
+            padding: 1rem 3rem;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 50;
         }
 
         nav h1 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             font-weight: 700;
+            background: linear-gradient(to right, var(--text-main), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
-            color: #fff;
-        }
-
-        nav h1 span {
-            color: var(--primary);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 2rem auto;
             padding: 0 2rem;
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 2rem;
         }
 
-        .search-panel {
+        /* Glassmorphic Panels */
+        .panel {
             background: var(--surface);
             backdrop-filter: var(--glass);
             -webkit-backdrop-filter: var(--glass);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-panel {
             padding: 1.5rem;
             height: calc(100vh - 120px);
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .search-box {
             width: 100%;
-            padding: 0.8rem 1rem;
-            background: #010409;
+            padding: 1rem 1.2rem;
+            background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             color: #fff;
-            font-family: 'Inter', sans-serif;
-            margin-bottom: 1rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
             box-sizing: border-box;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .search-box:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+            box-shadow: 0 0 15px var(--primary-glow);
+            background: rgba(15, 23, 42, 0.8);
         }
 
         .hotel-list {
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
+            gap: 1rem;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
         }
 
         .hotel-card {
-            padding: 1rem;
-            background: rgba(22, 27, 34, 0.4);
+            padding: 1.2rem;
+            background: rgba(15, 23, 42, 0.4);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hotel-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .hotel-card:hover {
             background: var(--surface-hover);
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            border-color: rgba(96, 165, 250, 0.4);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .hotel-card:hover::before {
+            opacity: 1;
         }
 
         .hotel-card h3 {
-            margin: 0 0 0.4rem 0;
-            font-size: 0.95rem;
-            color: #fff;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .hotel-card p {
             margin: 0;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .hotel-card .stars {
+        .hotel-card .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.8rem;
+        }
+
+        .stars {
             color: var(--star);
-            font-size: 0.8rem;
-            margin-top: 0.4rem;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+
+        .confidence-badge {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--success);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(52, 211, 153, 0.3);
         }
 
         .details-panel {
-            background: var(--surface);
-            backdrop-filter: var(--glass);
-            -webkit-backdrop-filter: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+            padding: 2.5rem;
+            overflow-y: auto;
+            height: calc(100vh - 120px);
         }
 
         .placeholder {
@@ -154,72 +237,180 @@
             text-align: center;
         }
 
+        .placeholder h2 {
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+
         .image-gallery {
             display: flex;
             gap: 1rem;
             overflow-x: auto;
-            padding-bottom: 1rem;
+            padding: 1.5rem 0;
+            margin: 1rem 0;
+            scroll-snap-type: x mandatory;
         }
 
         .image-gallery img {
-            height: 200px;
-            border-radius: 8px;
+            height: 250px;
+            width: 350px;
+            border-radius: 16px;
             object-fit: cover;
             border: 1px solid var(--border);
+            scroll-snap-align: start;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+        
+        .image-gallery img:hover {
+            transform: scale(1.02);
         }
 
         .tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
 
         .tag {
-            background: rgba(88, 166, 255, 0.1);
+            background: rgba(96, 165, 250, 0.1);
             color: var(--primary);
-            padding: 0.3rem 0.8rem;
+            padding: 0.4rem 1rem;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .rooms-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-
-        .rooms-table th, .rooms-table td {
-            text-align: left;
-            padding: 0.8rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .rooms-table th {
-            color: var(--text-muted);
-            font-weight: 600;
-            background: rgba(1, 4, 9, 0.3);
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(96, 165, 250, 0.2);
         }
         
-        .loading {
-            text-align: center;
-            padding: 2rem;
+        .tag-gray {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-muted);
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1.5rem;
+        }
+        
+        .header-title h2 {
+            font-size: 2.2rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .source-badges {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        
+        .source-badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
             color: var(--text-muted);
         }
 
-        .badge-canonical {
-            background: rgba(46, 160, 67, 0.2);
-            color: #3fb950;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            margin-left: 0.5rem;
-            vertical-align: middle;
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
         }
 
-        @media (max-width: 900px) {
+        .room-card {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .room-card:hover {
+            background: rgba(0,0,0,0.4);
+            border-color: rgba(192, 132, 252, 0.4);
+        }
+
+        .room-score {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(192, 132, 252, 0.15);
+            color: var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+        }
+
+        .room-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            padding-right: 3rem;
+        }
+
+        .room-attr-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1rem 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .room-attr-list li {
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .room-attr-list svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        .source-comparison {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+        
+        .source-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.3rem;
+        }
+        .source-row:last-child { margin-bottom: 0; }
+        .source-label { color: var(--text-muted); }
+        .source-val { color: var(--text-main); font-weight: 500; }
+
+        .loading-spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 1024px) {
             .container {
                 grid-template-columns: 1fr;
             }
@@ -232,28 +423,31 @@
 <body>
 
     <nav>
-        <h1>Away <span>Canonical Hotels</span></h1>
+        <h1>Away <span>Canonical</span></h1>
+        <div style="font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border);">
+            AI Merged Hotel Database
+        </div>
     </nav>
 
     <div class="container">
         <!-- Sidebar: Search -->
-        <div class="search-panel">
-            <input type="text" id="searchInput" class="search-box" placeholder="Search Bangalore hotels..." autocomplete="off">
+        <div class="panel search-panel">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search hotels, cities..." autocomplete="off">
             <div id="hotelList" class="hotel-list">
-                <div class="loading">Loading hotels...</div>
+                <div style="padding: 2rem;"><div class="loading-spinner"></div></div>
             </div>
         </div>
 
         <!-- Main: Details -->
-        <div class="details-panel" id="detailsPanel">
+        <div class="panel details-panel" id="detailsPanel">
             <div class="placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.5; margin-bottom: 1rem;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity: 0.3; margin-bottom: 1.5rem; color: var(--primary);">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                     <line x1="12" y1="22.08" x2="12" y2="12"></line>
                 </svg>
                 <h2>Select a hotel</h2>
-                <p>Browse the canonical merged data</p>
+                <p>Browse AI-merged canonical records and aligned room types.</p>
             </div>
         </div>
     </div>
@@ -266,33 +460,43 @@
         let debounceTimer;
 
         async function fetchHotels(query = '') {
-            hotelList.innerHTML = '<div class="loading">Searching...</div>';
+            hotelList.innerHTML = '<div style="padding: 2rem;"><div class="loading-spinner"></div></div>';
             try {
-                const res = await fetch(`/hotels?search=${encodeURIComponent(query)}&size=30`);
+                const res = await fetch(`/hotels?search=${encodeURIComponent(query)}&size=50`);
                 const data = await res.json();
                 renderList(data.items);
             } catch (e) {
-                hotelList.innerHTML = '<div class="loading" style="color: #f85149;">Error loading hotels</div>';
+                hotelList.innerHTML = '<div style="text-align:center; padding: 2rem; color: #ef4444;">Connection Error</div>';
             }
         }
 
         function renderList(hotels) {
             if (hotels.length === 0) {
-                hotelList.innerHTML = '<div class="loading">No hotels found.</div>';
+                hotelList.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">No hotels found.</div>';
                 return;
             }
 
             hotelList.innerHTML = hotels.map(h => `
                 <div class="hotel-card" onclick="loadHotel('${h.id}')">
-                    <h3>${h.name}</h3>
-                    <p>${h.address}</p>
-                    <div class="stars">${'★'.repeat(Math.round(h.stars || 0))}${h.stars ? '' : 'Unrated'}</div>
+                    <h3>${h.name || 'Unnamed Hotel'}</h3>
+                    <p>${h.address || 'No address provided'}</p>
+                    <div class="meta">
+                        <span class="stars">${'★'.repeat(Math.round(h.stars || 0))}</span>
+                        <span class="confidence-badge">${(h.confidence * 100).toFixed(0)}% Match</span>
+                    </div>
                 </div>
             `).join('');
         }
+        
+        function getIconSVG(type) {
+            if(type === 'capacity') return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+            if(type === 'bed') return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"></path></svg>`;
+            if(type === 'view') return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+            return '';
+        }
 
         async function loadHotel(id) {
-            detailsPanel.innerHTML = '<div class="placeholder"><div class="loading">Loading details...</div></div>';
+            detailsPanel.innerHTML = '<div class="placeholder"><div class="loading-spinner"></div><p style="margin-top:1rem;">Loading merged profile...</p></div>';
             try {
                 const res = await fetch(`/hotels/${id}`);
                 const h = await res.json();
@@ -301,7 +505,7 @@
                 if (h.image_urls && h.image_urls.length > 0) {
                     imagesHtml = `
                         <div class="image-gallery">
-                            ${h.image_urls.slice(0, 5).map(url => `<img src="${url}" alt="Hotel Image" onerror="this.style.display='none'">`).join('')}
+                            ${h.image_urls.map(url => `<img src="${url}" onerror="this.style.display='none'">`).join('')}
                         </div>
                     `;
                 }
@@ -309,62 +513,93 @@
                 let amenitiesHtml = '';
                 if (h.amenities && h.amenities.length > 0) {
                     amenitiesHtml = `
-                        <div class="tags">
-                            ${h.amenities.map(a => `<span class="tag">${a}</span>`).join('')}
+                        <div style="margin: 1.5rem 0;">
+                            <h4 style="margin: 0 0 1rem 0; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Amenities</h4>
+                            <div class="tags">
+                                ${h.amenities.map(a => `<span class="tag">${a}</span>`).join('')}
+                            </div>
                         </div>
                     `;
                 }
 
-                let roomsHtml = '<p style="color: var(--text-muted); font-size: 0.9rem;">No parsed rooms available.</p>';
+                let roomsHtml = '<p style="color: var(--text-muted); font-size: 1rem; margin-top: 1rem;">No aligned room inventory available.</p>';
                 if (h.matched_rooms && h.matched_rooms.length > 0) {
                     roomsHtml = `
-                        <table class="rooms-table">
-                            <thead>
-                                <tr>
-                                    <th>Match Confidence</th>
-                                    <th>Supplier A Room</th>
-                                    <th>Supplier B Room</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${h.matched_rooms.map(r => `
-                                    <tr>
-                                        <td><span class="tag" style="background: rgba(46, 160, 67, 0.1); color: #3fb950;">${(r.score * 100).toFixed(0)}%</span></td>
-                                        <td style="font-family: monospace; font-size: 0.8rem;">${r.room_a_id}</td>
-                                        <td style="font-family: monospace; font-size: 0.8rem;">${r.room_b_id}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                        <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 2rem;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.4rem;">Aligned Room Inventory</h3>
+                            <p style="color: var(--text-muted); margin: 0 0 1.5rem 0;">AI resolved rooms from multiple suppliers into normalized options.</p>
+                            <div class="rooms-grid">
+                                ${h.matched_rooms.map(r => {
+                                    // Fallbacks for display
+                                    const bestName = r.room_a?.name || r.room_b?.name || 'Standard Room';
+                                    const bestCap = r.room_a?.capacity || r.room_b?.capacity || '-';
+                                    const bestBed = r.room_a?.bed_type || r.room_b?.bed_type || 'Unknown Bed';
+                                    const bestView = r.room_a?.view || r.room_b?.view || 'Standard View';
+                                    
+                                    // Union features
+                                    const fSet = new Set([...(r.room_a?.features||[]), ...(r.room_b?.features||[])]);
+                                    const mergedFeatures = Array.from(fSet).slice(0,3);
+                                    
+                                    return `
+                                    <div class="room-card">
+                                        <div class="room-score">${(r.score * 100).toFixed(0)}% Match</div>
+                                        <h4 class="room-title">${bestName}</h4>
+                                        <ul class="room-attr-list">
+                                            <li>${getIconSVG('capacity')} Up to ${bestCap} Guests</li>
+                                            <li>${getIconSVG('bed')} ${bestBed}</li>
+                                            <li>${getIconSVG('view')} ${bestView}</li>
+                                        </ul>
+                                        
+                                        <div class="tags" style="margin-bottom: 1rem;">
+                                            ${mergedFeatures.map(f => `<span class="tag tag-gray">${f}</span>`).join('')}
+                                        </div>
+
+                                        <div class="source-comparison">
+                                            <div class="source-row">
+                                                <span class="source-label">Supplier A</span>
+                                                <span class="source-val" title="${r.room_a?.name || 'N/A'}">${(r.room_a?.name || 'N/A').substring(0,25)}</span>
+                                            </div>
+                                            <div class="source-row">
+                                                <span class="source-label">Supplier B</span>
+                                                <span class="source-val" title="${r.room_b?.name || 'N/A'}">${(r.room_b?.name || 'N/A').substring(0,25)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
                     `;
                 }
 
                 detailsPanel.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <h2 style="margin: 0 0 0.5rem 0; color: #fff;">${h.name} <span class="badge-canonical">Canonical</span></h2>
-                            <p style="margin: 0; color: var(--text-muted);">${h.address}</p>
-                            <p style="margin: 0.5rem 0; color: var(--star);">${'★'.repeat(Math.round(h.stars || 0))} 
-                                <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 1rem;">Match Confidence: ${(h.confidence * 100).toFixed(1)}%</span>
+                    <div class="header-section">
+                        <div class="header-title">
+                            <h2>${h.name}</h2>
+                            <p style="margin: 0; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                ${h.address}
                             </p>
+                            <div style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem;">
+                                <span style="color: var(--star); font-size: 1.2rem; letter-spacing: 2px;">${'★'.repeat(Math.round(h.stars || 0))}</span>
+                                <span class="tag" style="background: rgba(52, 211, 153, 0.1); color: var(--success); border-color: rgba(52, 211, 153, 0.3);">
+                                    Confidence: ${(h.confidence * 100).toFixed(1)}%
+                                </span>
+                            </div>
                         </div>
-                        <div style="text-align: right;">
-                            <span class="badge-canonical" style="background: var(--surface); color: var(--text-muted); font-weight: normal; border: 1px solid var(--border);">Source A: ${h.source_a_id || 'N/A'}</span>
-                            <div style="margin-top: 0.4rem;"></div>
-                            <span class="badge-canonical" style="background: var(--surface); color: var(--text-muted); font-weight: normal; border: 1px solid var(--border);">Source B: ${h.source_b_id || 'N/A'}</span>
+                        <div class="source-badges">
+                            <span class="source-badge">Supplier A: ${h.source_a_id || 'Missing'}</span>
+                            <span class="source-badge">Supplier B: ${h.source_b_id || 'Missing'}</span>
                         </div>
                     </div>
 
                     ${imagesHtml}
                     ${amenitiesHtml}
-
-                    <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                        <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; color: #fff;">Aligned Rooms</h3>
-                        ${roomsHtml}
-                    </div>
+                    ${roomsHtml}
                 `;
             } catch (e) {
-                detailsPanel.innerHTML = '<div class="placeholder" style="color: #f85149;">Error loading hotel details</div>';
+                console.error(e);
+                detailsPanel.innerHTML = '<div class="placeholder" style="color: #ef4444;">Error rendering hotel details. Check console.</div>';
             }
         }
 

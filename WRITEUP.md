@@ -29,7 +29,12 @@ The API requires absolutely no external dependencies at runtime.
 | Embeddings only | Misses geographic context entirely |
 | Random Forest pseudo-labeling | Explored, not adopted (heuristic correlation) |
 | LLM on all pairs | Too expensive / impossible at scale |
-| Selective LLM with OSM | **Final choice ✅** |
+| Selective LLM with Splink & Weighted Edge Graphs | **Final choice ✅** |
+
+## Probabilistic Linkage & Graph RAG Optimization
+Instead of a simple heuristic score, we implemented **Splink** (Probabilistic Record Linkage) backed by DuckDB to learn feature weights unsupervised via Expectation-Maximization.
+
+More importantly, to avoid **Identity Contamination** in downstream Graph RAG applications, we do not throw away the `match_probability` after crossing the match threshold. We treat matched candidate pairs as a Weighted Graph (using `NetworkX`). When connected components are clustered into a canonical hotel, the underlying `SAME_AS` edges and their specific probabilities are retained in the final output artifact (`merge_edges`). This allows downstream retrieval systems to dynamically filter out fuzzy merges (e.g., `min_confidence=0.90`) without polluting the entire graph structure.
 
 ## Running the Project
 ```bash

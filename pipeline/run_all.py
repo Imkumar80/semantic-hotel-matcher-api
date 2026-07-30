@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import time
+import os
 
 def run_stage(stage_script):
     print(f"\n{'='*50}\nRunning {stage_script}...\n{'='*50}")
@@ -15,18 +16,20 @@ def run_stage(stage_script):
 def main():
     stages = [
         "01_preprocess.py",
-        "02_candidates.py",
-        "03_score_hotels.py",
-        "04_resolve_hotels.py",
-        "05_merge_hotels.py",
-        "06_parse_rooms.py",
-        "07_match_rooms.py",
-        "08_build_db.py"
+        "02_splink_match.py",
+        "03_resolve_hotels.py",
+        "04_merge_hotels.py",
+        "05_parse_rooms.py",
+        "06_match_rooms.py",
+        "07_build_db.py"
     ]
     
     total_start = time.time()
     for stage in stages:
-        run_stage(stage)
+        if os.path.exists(f"pipeline/{stage}"):
+            run_stage(stage)
+        else:
+            print(f"Warning: {stage} not found, skipping.")
         
     total_end = time.time()
     print(f"\nPipeline completed successfully in {total_end - total_start:.2f} seconds.")
