@@ -111,7 +111,7 @@ The entity resolution pipeline is broken into 6 distinct scripts executed via `u
 | -------- | -------- |
 | Pure fuzzy matching | Too brittle on foreign vocabularies and ignores spatial proximity. |
 | Vector Embeddings | Explored, but discarded. Misses highly localized geographic context. |
-| Random Forest Pseudo-labeling | Explored, but discarded because it correlated too heavily with the raw heuristic features, providing limited independent evidence on ambiguous cases. |
+| Random Forest Classifier | Explored training a Random Forest via auto-labeling on high-confidence heuristic matches. While it ran in under a minute, the model correlated too heavily with the raw heuristic features, providing limited independent evidence on ambiguous cases. |
 | LLM on all pairs | Too expensive / impossible at scale. Immediately hits API Rate Limits. |
 | Splink + NetworkX + NLP Smart Extraction | **Final Choice ✅** Extremely fast, scalable, and deterministically isolates LLM usage to edge cases only. |
 
@@ -121,9 +121,9 @@ The entity resolution pipeline is broken into 6 distinct scripts executed via `u
 
 **"What breaks first at 200,000 hotels across 3 suppliers?"**
 
-If we used an LLM to blindly parse all 200,000 rooms, the system would immediately break on API rate limits and token costs. 200k hotels equates to ~1M unique room strings. This would cost thousands of dollars in API spend and take days to execute due to rate limits (e.g., 15 RPM).
+If we used an LLM to blindly parse all 200,000 rooms, the system would immediately break on API rate limits. During development, I specifically used the **Gemini Free Tier**, which has a strict 15 RPM rate limit. When I tried to parse too many rooms at once, the free tier simply crashed and rejected the batch requests. 200k hotels equates to ~1M unique room strings, which would cost thousands of dollars in API spend and take weeks to execute on a free tier.
 
-To scale this, we rely on the empirical data-driven thresholds built into `05_parse_rooms.py`. By aggressively mapping 87% of strings via extremely fast, O(1) NLP rules (FlashText), we strictly bound the LLM queue to a tiny, constant-sized subset of edge cases regardless of the total market size, keeping API costs near zero.
+To scale this (and to survive on the Gemini Free Tier), we rely on the empirical data-driven thresholds built into `05_parse_rooms.py`. By aggressively mapping 87% of strings via extremely fast, O(1) NLP rules (FlashText), we strictly bound the LLM queue to a tiny, constant-sized subset of edge cases regardless of the total market size, completely avoiding rate limits.
 
 At 200,000 hotels, what breaks next is the geographic blocking in `02_splink_match.py`. While DuckDB is heavily optimized, doing a raw cross-join or naive blocking on coordinates will eventually blow up memory. To fix this, we would introduce a distributed spatial index (like H3 Hexagons or Elasticsearch geo-bounding) or MinHash LSH to generate hyper-local match candidates before passing them to the Expectation-Maximization step.
 
