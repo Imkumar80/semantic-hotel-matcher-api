@@ -2,6 +2,9 @@
 
 A high-performance pipeline and API for resolving disjoint, messy hotel supplier data into a pristine canonical schema.
 
+🌍 **Live Demo:** [https://semantic-hotel-matcher-api.onrender.com/](https://semantic-hotel-matcher-api.onrender.com/)
+
+
 ## 🏗️ System Architecture
 
 ```mermaid
@@ -173,8 +176,3 @@ If I had another week to build this pipeline for production, I would add:
 
 ---
 
-## 🏗️ Deployment
-This project is configured for 1-click deployment to **Render**.
-Just connect this repository to Render and use the included `render.yaml` blueprint. The FastAPI service will spin up on a free Web Service tier instantly without any extra configuration.
-
-🌍 **Live Demo:** [https://semantic-hotel-matcher-api.onrender.com/](https://semantic-hotel-matcher-api.onrender.com/)
