@@ -2,7 +2,21 @@
 
 A high-performance pipeline and API for resolving disjoint, messy hotel supplier data into a pristine canonical schema.
 
-## 🚀 Quick Start (Gold Standard)
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    A[Raw Data CSVs] --> B(01_clean_data.py)
+    B -->|Normalized Text| C(02_splink_match.py)
+    C -->|Probabilistic Matches| D(03_resolve_hotels.py)
+    D -->|Canonical Hotels| E(04_embed_rooms.py)
+    E --> F(05_parse_rooms.py - Smart Extractor)
+    F -->|Parsed Capacity/Beds| G(06_match_rooms.py)
+    G -->|Room Inventory| H(07_build_db.py)
+    H -->|SQLite Database| I[FastAPI Backend]
+    I -->|JSON / OpenAPI| J[React Frontend]
+```
+## 🚀 Quick Start 
 
 The entire pipeline and API are fully dockerized. To build the SQLite database and start the web server in one command:
 
@@ -54,16 +68,27 @@ curl "http://localhost:8000/hotels/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
   ],
   "matched_rooms": [
     {
-      "hotel_a_id": "A-12345",
-      "hotel_b_id": "B-98765",
-      "room_a_id": "A-RM-001",
-      "room_b_id": "B-RM-001",
-      "score": 1.0
+      "score": 0.96,
+      "room_a": {
+        "id": "A-RM-001",
+        "name": "Deluxe King Room",
+        "capacity": 2,
+        "bed_type": "King",
+        "view": "City",
+        "features": ["Air Conditioning", "Bathtub", "Mini-bar"],
+        "room_class": "Deluxe"
+      },
+      "room_b": {
+        "id": "B-RM-001",
+        "name": "King Deluxe - City View",
+        "capacity": 2,
+        "bed_type": "King",
+        "view": "City",
+        "features": ["Air Conditioning", "Bathtub"],
+        "room_class": "Deluxe"
+      }
     }
   ]
 }
 ```
 
-## 🏗️ Deployment (Free Host)
-This project is configured for 1-click deployment to **Render**.
-Just connect this repository to Render and use the included `render.yaml` blueprint. The FastAPI service will spin up on a free Web Service tier instantly.
