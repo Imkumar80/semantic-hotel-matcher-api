@@ -6,11 +6,14 @@ import json
 import re
 import pickle
 import time
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from typing import List, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
+from flashtext import KeywordProcessor
+from rapidfuzz import process, fuzz
 
 class ParsedRoom(BaseModel):
     capacity: Optional[int]
@@ -26,8 +29,48 @@ def load_config():
     with open("config/config.yaml", "r") as f:
         return yaml.safe_load(f)
 
-def regex_parse(name: str):
-    name_lower = name.lower()
+# Initialize FlashText Taxonomy
+kp = KeywordProcessor(case_sensitive=False)
+
+# Bed Types
+for b in ['single', 'twin', 'double', 'king', 'queen', 'bunk', 'sofa bed']:
+    kp.add_keyword(b, ('bed_type', b.title().replace(' Bed', '')))
+
+# Room Class
+for c in ['standard', 'std', 'deluxe', 'dlx', 'superior', 'sup', 'executive', 'exec', 'premium', 'suite', 'studio', 'villa', 'apartment']:
+    canonical = c.title()
+    if c == 'std': canonical = 'Standard'
+    if c == 'dlx': canonical = 'Deluxe'
+    if c == 'sup': canonical = 'Superior'
+    if c == 'exec': canonical = 'Executive'
+    kp.add_keyword(c, ('room_class', canonical))
+
+# Views
+for v in ['city view', 'city', 'pool view', 'pool', 'sea view', 'sea', 'ocean view', 'ocean', 'garden view', 'garden', 'lake view', 'lake']:
+    canonical = v.title().replace(' View', '')
+    if canonical == 'Ocean': canonical = 'Sea'
+    kp.add_keyword(v, ('view', canonical))
+
+# Features
+for f in ['breakfast', 'balcony', 'air conditioning', 'ac', 'wi-fi', 'wifi', 'jacuzzi', 'kitchen', 'patio']:
+    canonical = f.title()
+    if f in ['ac', 'air conditioning']: canonical = 'AC'
+    if f in ['wifi', 'wi-fi']: canonical = 'WiFi'
+    kp.add_keyword(f, ('features', canonical))
+
+# Capacities
+for i in range(1, 10):
+    kp.add_keyword(f'{i} adult', ('capacity', i))
+    kp.add_keyword(f'{i} adults', ('capacity', i))
+
+FUZZ_VOCAB = {
+    'bed_type': ['single', 'twin', 'double', 'king', 'queen', 'bunk', 'sofa bed'],
+    'room_class': ['standard', 'deluxe', 'superior', 'executive', 'premium', 'suite', 'studio', 'villa', 'apartment'],
+    'view': ['city view', 'pool view', 'sea view', 'ocean view', 'garden view', 'lake view'],
+    'features': ['breakfast', 'balcony', 'air conditioning', 'wifi', 'jacuzzi', 'kitchen', 'patio']
+}
+
+def smart_extract(name: str):
     parsed = {
         'capacity': None,
         'bed_type': None,
@@ -36,36 +79,37 @@ def regex_parse(name: str):
         'room_class': None
     }
     
-    # Simple regex rules
-    if re.search(r'\b(single)\b', name_lower): parsed['capacity'] = 1
-    elif re.search(r'\b(double|twin|2 adults)\b', name_lower): parsed['capacity'] = 2
-    elif re.search(r'\b(triple|3 adults)\b', name_lower): parsed['capacity'] = 3
-    elif re.search(r'\b(family|4 adults)\b', name_lower): parsed['capacity'] = 4
-    
-    if re.search(r'\b(king)\b', name_lower): parsed['bed_type'] = 'King'
-    elif re.search(r'\b(queen)\b', name_lower): parsed['bed_type'] = 'Queen'
-    elif re.search(r'\b(twin)\b', name_lower): parsed['bed_type'] = 'Twin'
-    
-    if re.search(r'\b(city view)\b', name_lower): parsed['view'] = 'City'
-    elif re.search(r'\b(pool view)\b', name_lower): parsed['view'] = 'Pool'
-    elif re.search(r'\b(garden view)\b', name_lower): parsed['view'] = 'Garden'
-    elif re.search(r'\b(lake view)\b', name_lower): parsed['view'] = 'Lake'
-    
-    if re.search(r'\b(breakfast)\b', name_lower): parsed['features'].add('Breakfast')
-    if re.search(r'\b(balcony)\b', name_lower): parsed['features'].add('Balcony')
-    if re.search(r'\b(ac|air conditioning)\b', name_lower): parsed['features'].add('AC')
-    if re.search(r'\b(wifi|wi-fi)\b', name_lower): parsed['features'].add('WiFi')
-    
-    if re.search(r'\b(deluxe)\b', name_lower): parsed['room_class'] = 'Deluxe'
-    elif re.search(r'\b(standard)\b', name_lower): parsed['room_class'] = 'Standard'
-    elif re.search(r'\b(superior)\b', name_lower): parsed['room_class'] = 'Superior'
-    elif re.search(r'\b(suite)\b', name_lower): parsed['room_class'] = 'Suite'
-    elif re.search(r'\b(executive)\b', name_lower): parsed['room_class'] = 'Executive'
-    elif re.search(r'\b(premium)\b', name_lower): parsed['room_class'] = 'Premium'
-    
-    # We consider it "resolved" if we found at least a class or bed type
+    found = kp.extract_keywords(name)
+    for category, value in found:
+        if category == 'features':
+            parsed[category].add(value)
+        elif parsed[category] is None:
+            parsed[category] = value
+            
+    if parsed['capacity'] is None and parsed['bed_type']:
+        if parsed['bed_type'] == 'Single':
+            parsed['capacity'] = 1
+        else:
+            parsed['capacity'] = 2
+
+    tokens = re.findall(r'\b[a-zA-Z]{3,}\b', name.lower())
+    for token in tokens:
+        for category, options in FUZZ_VOCAB.items():
+            if parsed[category] is None or category == 'features':
+                best_match = process.extractOne(token, options, scorer=fuzz.ratio)
+                if best_match and best_match[1] >= 85:
+                    val = best_match[0].title()
+                    if category == 'features':
+                        if val == 'Air Conditioning': val = 'AC'
+                        if val == 'Wifi': val = 'WiFi'
+                        parsed[category].add(val)
+                    else:
+                        if parsed[category] is None:
+                            if val in ['Sea View', 'Ocean View']: val = 'Sea'
+                            elif val.endswith(' View'): val = val.replace(' View', '')
+                            parsed[category] = val
+
     is_resolved = (parsed['room_class'] is not None) or (parsed['bed_type'] is not None)
-    
     parsed['features'] = list(parsed['features'])
     return is_resolved, parsed
 
@@ -121,9 +165,10 @@ def main():
     else:
         room_cache = {}
         
+    load_dotenv()
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY")) if os.environ.get("GEMINI_API_KEY") else None
     if not client:
-        print("WARNING: GEMINI_API_KEY not set. Falling back to regex parsing exclusively for LLM step.")
+        print("WARNING: GEMINI_API_KEY not set. Falling back to empty arrays for LLM step.")
         
     llm_model = config['models']['llm_model']
     
@@ -134,14 +179,14 @@ def main():
         if name in room_cache:
             continue
             
-        # Try Regex
-        is_res, parsed = regex_parse(name)
+        # Try Smart Extractor
+        is_res, parsed = smart_extract(name)
         if is_res:
             room_cache[name] = parsed
         else:
             unresolved_names.append(name)
             
-    print(f"Resolved by Regex: {len(all_names) - len(unresolved_names) - len([n for n in all_names if n in room_cache])}")
+    print(f"Resolved by Smart Extractor: {len(all_names) - len(unresolved_names)}")
     print(f"To be resolved by LLM: {len(unresolved_names)}")
     
     # Batch LLM
@@ -152,7 +197,8 @@ def main():
         results = batch_llm_parse(batch, client, llm_model)
         
         # Free-tier rate limit (15 RPM). We sleep 15s to be extremely safe.
-        time.sleep(15)
+        if client:
+            time.sleep(15)
         
         # Ensure results match batch size (fallback in case of strict schema failure)
         if len(results) != len(batch):

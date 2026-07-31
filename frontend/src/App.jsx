@@ -285,6 +285,26 @@ export default function App() {
                 )}
               </div>
 
+              {/* Near Misses */}
+              {hotelDetails.near_misses?.length > 0 && (
+                <div className="p-8 pt-6 mt-4 border-t border-white/10 bg-black/40">
+                  <h3 className="text-2xl font-semibold text-white mb-2">Near Misses</h3>
+                  <p className="text-gray-400 mb-6">Candidates evaluated but rejected by the AI resolution engine.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {hotelDetails.near_misses.map((miss, i) => (
+                      <div key={i} className="flex justify-between items-center p-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <span className="text-red-400 font-mono text-sm">ID: {miss.miss_id}</span>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-xs font-medium border border-red-500/20">
+                          {(miss.score * 100).toFixed(1)}% Match
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </div>

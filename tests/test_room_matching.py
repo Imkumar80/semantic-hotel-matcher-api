@@ -2,7 +2,7 @@ import pytest
 import importlib.util
 import sys
 
-spec = importlib.util.spec_from_file_location("match_rooms", "pipeline/07_match_rooms.py")
+spec = importlib.util.spec_from_file_location("match_rooms", "pipeline/06_match_rooms.py")
 match_rooms = importlib.util.module_from_spec(spec)
 sys.modules["match_rooms"] = match_rooms
 spec.loader.exec_module(match_rooms)
