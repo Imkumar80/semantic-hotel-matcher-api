@@ -16,7 +16,8 @@ RUN pip install uv
 # Copy project definition
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies using uv
+# Install dependencies using uv. We explicitly install CPU-only torch first so it doesn't pull CUDA.
+RUN uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
 RUN uv pip install --system -r pyproject.toml
 
 # Copy backend code
