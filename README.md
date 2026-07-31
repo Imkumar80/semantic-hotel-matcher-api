@@ -172,3 +172,9 @@ If I had another week to build this pipeline for production, I would add:
 3. **Automated Data Quality Alerts:** Before step 1, I would inject `Great Expectations` to catch schema drifts (e.g., if a supplier suddenly renames `latitude` to `lat` or starts returning nulls for 90% of rows, the pipeline should safely halt).
 
 ---
+
+## 🏗️ Deployment
+This project is configured for 1-click deployment to **Render**.
+Just connect this repository to Render and use the included `render.yaml` blueprint. The FastAPI service will spin up on a free Web Service tier instantly without any extra configuration.
+
+🌍 **Live Demo:** [https://semantic-hotel-matcher-api.onrender.com/](https://semantic-hotel-matcher-api.onrender.com/)
