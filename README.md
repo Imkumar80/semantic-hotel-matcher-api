@@ -44,8 +44,8 @@ graph TD
 ```
 
 ## 💸 Total API Spend: $0.00
-As requested by the prompt, my total API spend for this pipeline was exactly **$0.00**. 
-Rather than blindly passing tens of thousands of messy room strings to an LLM and burning hundreds of dollars in API credits, I engineered a local $O(1)$ NLP semantic extractor (FlashText) that successfully parsed 87% of the dataset instantly on a local CPU. By strictly bounding the LLM to act only as a fallback for the remaining 13% of unstructured edge cases, I demonstrated how to architect an AI pipeline that scales infinitely without causing a linear explosion in cloud costs. "Spending well" means knowing when *not* to use an LLM!
+My total API spend for this pipeline was exactly **$0.00**. 
+Rather than blindly passing tens of thousands of messy room strings to an LLM and burning hundreds of dollars in API credits, I engineered a local $O(1)$ NLP semantic extractor (FlashText) that successfully parsed 87% of the dataset instantly on a local CPU. By strictly bounding the LLM to act only as a fallback for the remaining 13% of unstructured edge cases (which I ultimately skipped running because the Free Tier API rate limits were hit, and it was not sensible to buy API credits just for this project).
 
 ## 🏗️ Deployment 
 
