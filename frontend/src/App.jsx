@@ -235,6 +235,7 @@ export default function App() {
                       const cap = rm.room_a?.capacity || rm.room_b?.capacity || '-';
                       const bed = rm.room_a?.bed_type || rm.room_b?.bed_type || 'Standard Bed';
                       const view = rm.room_a?.view || rm.room_b?.view || 'Standard View';
+                      const roomClass = rm.room_a?.room_class || rm.room_b?.room_class || 'Standard Class';
                       
                       const features = Array.from(new Set([...(rm.room_a?.features || []), ...(rm.room_b?.features || [])])).slice(0,3);
 
@@ -255,6 +256,9 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-300">
                                 <Eye className="w-4 h-4 text-gray-500" /> {view}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-300">
+                                <Star className="w-4 h-4 text-gray-500" /> {roomClass}
                               </div>
                             </div>
                             
