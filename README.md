@@ -19,6 +19,30 @@ graph TD
     H -->|JSON / OpenAPI| I[React Frontend]
 ```
 
+## 📂 Repository Structure
+
+```text
+├── api/                  # FastAPI backend server
+│   ├── main.py           # API routes & SQLite queries
+│   └── schemas.py        # Pydantic response models
+├── data/                 # Raw and canonical database files
+│   └── canonical/        # SQLite output database
+├── frontend/             # React (Vite) Frontend UI
+│   ├── src/              # Tailwind + Lucide React components
+│   └── package.json
+├── pipeline/             # The 6-step Entity Resolution Engine
+│   ├── 01_preprocess.py
+│   ├── 02_splink_match.py
+│   ├── 03_resolve_hotels.py
+│   ├── 05_parse_rooms.py
+│   ├── 06_match_rooms.py
+│   ├── 07_build_db.py
+│   └── run_all.py        # Master orchestration script
+├── Dockerfile            # Containerizes the entire stack
+├── docker-compose.yml    # Runs the API on port 8000
+└── render.yaml           # 1-click cloud deployment config
+```
+
 ## 🚀 Quick Start 
 
 The entire pipeline and API are fully dockerized. To build the SQLite database and start the web server in one command:
