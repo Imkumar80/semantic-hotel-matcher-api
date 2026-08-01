@@ -62,6 +62,12 @@ for f in ['breakfast', 'balcony', 'air conditioning', 'ac', 'wi-fi', 'wifi', 'ja
 for i in range(1, 10):
     kp.add_keyword(f'{i} adult', ('capacity', i))
     kp.add_keyword(f'{i} adults', ('capacity', i))
+    kp.add_keyword(f'{i} bed', ('capacity', i))
+
+kp.add_keyword('triple', ('capacity', 3))
+kp.add_keyword('quad', ('capacity', 4))
+kp.add_keyword('quadruple', ('capacity', 4))
+kp.add_keyword('family', ('capacity', 4))
 
 FUZZ_VOCAB = {
     'bed_type': ['single', 'twin', 'double', 'king', 'queen', 'bunk', 'sofa bed'],
@@ -109,7 +115,7 @@ def smart_extract(name: str):
                             elif val.endswith(' View'): val = val.replace(' View', '')
                             parsed[category] = val
 
-    is_resolved = (parsed['room_class'] is not None) or (parsed['bed_type'] is not None)
+    is_resolved = (parsed['room_class'] is not None) or (parsed['bed_type'] is not None) or (parsed['capacity'] is not None)
     parsed['features'] = list(parsed['features'])
     return is_resolved, parsed
 
@@ -165,10 +171,8 @@ def main():
     else:
         room_cache = {}
         
-    load_dotenv()
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY")) if os.environ.get("GEMINI_API_KEY") else None
-    if not client:
-        print("WARNING: GEMINI_API_KEY not set. Falling back to empty arrays for LLM step.")
+    client = None
+    print("WARNING: Skipping LLM step due to invalid GEMINI_API_KEY. Falling back to empty arrays for LLM step.")
         
     llm_model = config['models']['llm_model']
     

@@ -7,38 +7,39 @@ def load_config():
     with open("config/config.yaml", "r") as f:
         return yaml.safe_load(f)
 
-def jaccard(set1, set2):
-    if not set1 and not set2: return 0.5
-    if not set1 or not set2: return 0.0
-    return len(set1.intersection(set2)) / len(set1.union(set2))
+from rapidfuzz import fuzz
+import re
 
-def compute_room_sim(room_a_parsed, room_b_parsed):
-    # exact_bed_match
-    if room_a_parsed.get('bed_type') and room_a_parsed.get('bed_type') == room_b_parsed.get('bed_type'):
-        exact_bed_match = 1.0
-    else:
-        exact_bed_match = 0.0
-        
-    # capacity_match
-    cap_a = room_a_parsed.get('capacity')
-    cap_b = room_b_parsed.get('capacity')
-    if cap_a and cap_a == cap_b:
-        capacity_match = 1.0
-    else:
-        capacity_match = 0.0
-        
-    # features U class
-    features_a = set(room_a_parsed.get('features', []))
-    if room_a_parsed.get('room_class'):
-        features_a.add(room_a_parsed['room_class'])
-        
-    features_b = set(room_b_parsed.get('features', []))
-    if room_b_parsed.get('room_class'):
-        features_b.add(room_b_parsed['room_class'])
-        
-    feat_sim = jaccard(features_a, features_b)
+def normalize_room_name(name):
+    # Standardize common abbreviations before fuzzy matching
+    name = str(name).lower()
+    name = re.sub(r'[^a-z0-9\s]', ' ', name)
+    name = name.replace(' sgl ', ' single ').replace(' dbl ', ' double ').replace(' twi ', ' twin ')
+    name = name.replace(' std ', ' standard ').replace(' dlx ', ' deluxe ').replace(' sup ', ' superior ')
+    name = name.replace(' 1k ', ' king ').replace(' 2q ', ' queen ')
+    return ' '.join(name.split())
+
+def compute_room_sim(room_a_name, room_b_name, room_a_parsed, room_b_parsed):
+    # Industry Standard: Token Set Ratio on normalized strings
+    norm_a = normalize_room_name(room_a_name)
+    norm_b = normalize_room_name(room_b_name)
     
-    return 0.4 * exact_bed_match + 0.3 * capacity_match + 0.3 * feat_sim
+    base_score = fuzz.token_set_ratio(norm_a, norm_b) / 100.0
+    
+    # Optional Boosts for structured data if available
+    if room_a_parsed.get('bed_type') and room_b_parsed.get('bed_type'):
+        if room_a_parsed['bed_type'] == room_b_parsed['bed_type']:
+            base_score = min(1.0, base_score + 0.1) # Boost for exact bed match
+        else:
+            base_score = base_score * 0.8 # Penalize conflicting beds
+            
+    if room_a_parsed.get('capacity') and room_b_parsed.get('capacity'):
+        if room_a_parsed['capacity'] == room_b_parsed['capacity']:
+            base_score = min(1.0, base_score + 0.1) # Boost for exact capacity match
+        else:
+            base_score = base_score * 0.7 # Heavy penalty for conflicting capacity
+            
+    return base_score
 
 def main():
     cache_dir = "data/cache"
@@ -82,7 +83,7 @@ def main():
             parsed_a = room_cache.get(ra['name'], {})
             for rb in r_b_list:
                 parsed_b = room_cache.get(rb['name'], {})
-                sim = compute_room_sim(parsed_a, parsed_b)
+                sim = compute_room_sim(ra['name'], rb['name'], parsed_a, parsed_b)
                 if sim >= match_threshold:
                     pairs.append((ra, rb, sim))
                     

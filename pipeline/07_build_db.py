@@ -95,38 +95,45 @@ def main():
     conn.commit()
     
     # Insert Rooms
-    df_rooms_a = pd.read_pickle(f"{cache_dir}/rooms_a_processed.pkl")
-    df_rooms_b = pd.read_pickle(f"{cache_dir}/rooms_b_processed.pkl")
-    
-    with open(f"{cache_dir}/room_parse_cache.pkl", "rb") as f:
-        room_cache = pickle.load(f)
+    if os.path.exists(f"{cache_dir}/rooms_a_processed.pkl") and os.path.exists(f"{cache_dir}/room_parse_cache.pkl"):
+        df_rooms_a = pd.read_pickle(f"{cache_dir}/rooms_a_processed.pkl")
+        df_rooms_b = pd.read_pickle(f"{cache_dir}/rooms_b_processed.pkl")
         
-    def insert_rooms(df, source_label):
-        for _, row in df.iterrows():
-            name = row['name']
-            parsed = room_cache.get(name, {})
-            c.execute('''
-            INSERT INTO rooms (room_id, hotel_id, name, capacity, bed_type, view, features, room_class, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                row['room_id'], row['hotel_id'], name,
-                parsed.get('capacity'), parsed.get('bed_type'), parsed.get('view'),
-                "|".join(parsed.get('features', [])), parsed.get('room_class'), source_label
-            ))
+        with open(f"{cache_dir}/room_parse_cache.pkl", "rb") as f:
+            room_cache = pickle.load(f)
             
-    insert_rooms(df_rooms_a, 'A')
-    insert_rooms(df_rooms_b, 'B')
-    conn.commit()
-    
-    # Insert Room Matches
-    df_room_matches = pd.read_pickle(f"{cache_dir}/room_matches.pkl")
-    for _, row in df_room_matches.iterrows():
-        c.execute('''
-        INSERT INTO room_matches (hotel_a_id, hotel_b_id, room_a_id, room_b_id, score)
-        VALUES (?, ?, ?, ?, ?)
-        ''', (row['hotel_a_id'], row['hotel_b_id'], row['room_a_id'], row['room_b_id'], row['score']))
+        def insert_rooms(df, source_label):
+            for _, row in df.iterrows():
+                name = row['name']
+                parsed = room_cache.get(name, {})
+                c.execute('''
+                INSERT INTO rooms (room_id, hotel_id, name, capacity, bed_type, view, features, room_class, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    row['room_id'], row['hotel_id'], name,
+                    parsed.get('capacity'), parsed.get('bed_type'), parsed.get('view'),
+                    "|".join(parsed.get('features', [])), parsed.get('room_class'), source_label
+                ))
+                
+        insert_rooms(df_rooms_a, 'A')
+        insert_rooms(df_rooms_b, 'B')
+        conn.commit()
+    else:
+        print("Warning: Skipping room insertion because cache files are missing.")
         
-    conn.commit()
+    # Insert Room Matches
+    if os.path.exists(f"{cache_dir}/room_matches.pkl"):
+        df_room_matches = pd.read_pickle(f"{cache_dir}/room_matches.pkl")
+        for _, row in df_room_matches.iterrows():
+            c.execute('''
+            INSERT INTO room_matches (hotel_a_id, hotel_b_id, room_a_id, room_b_id, score)
+            VALUES (?, ?, ?, ?, ?)
+            ''', (row['hotel_a_id'], row['hotel_b_id'], row['room_a_id'], row['room_b_id'], row['score']))
+            
+        conn.commit()
+    else:
+        print("Warning: Skipping room matches because cache file is missing.")
+        
     conn.close()
     
     print(f"Database built successfully at {db_path}")

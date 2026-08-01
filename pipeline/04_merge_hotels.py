@@ -5,9 +5,40 @@ import uuid
 import pickle
 import os
 import sys
+import re
+
+# Add current directory to path to fix IDE and execution import errors
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import our new deduplicator
 from amenity_normalizer import deduplicate_amenities
+import bharataddress
+
+def deduplicate_address(address: str) -> str:
+    if not address or pd.isna(address):
+        return None
+    
+    try:
+        parsed = bharataddress.parse(address)
+        components = []
+        
+        # Reconstruct the address cleanly using the recognized geographical hierarchy
+        if parsed.building_name: components.append(parsed.building_name)
+        if parsed.building_number: components.append(parsed.building_number)
+        if parsed.sub_locality: components.append(parsed.sub_locality)
+        if parsed.locality: components.append(parsed.locality)
+        if parsed.landmark: components.append(parsed.landmark)
+        if parsed.city: components.append(parsed.city)
+        if parsed.district and parsed.district != parsed.city: components.append(parsed.district)
+        if parsed.state: components.append(parsed.state)
+        if parsed.pincode: components.append(parsed.pincode)
+        
+        if components:
+            return ", ".join(components)
+        return address # Fallback to original if parser fails to find components
+    except Exception:
+        return address # Fallback to original if parsing throws an error
+
 
 def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df_b, near_misses):
     canonical = {}
@@ -42,9 +73,13 @@ def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df
     names = [str(h.get('name', '')) for h in cluster_hotels if pd.notna(h.get('name'))]
     canonical['name'] = max(names, key=len) if names else None
     
-    # Pick best address
+    # Pick best address and deduplicate components
     addrs = [str(h.get('address', '')) for h in cluster_hotels if pd.notna(h.get('address'))]
-    canonical['address'] = max(addrs, key=len) if addrs else None
+    if addrs:
+        best_addr = max(addrs, key=len)
+        canonical['address'] = deduplicate_address(best_addr)
+    else:
+        canonical['address'] = None
     
     # Coords (Prefer A's, then B's)
     a_coords = [(h['lat'], h['lon']) for h in cluster_hotels if h['source'] == 'A' and pd.notna(h.get('lat'))]
@@ -80,11 +115,13 @@ def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df
         raw_amenities.extend(h.get('amenities_list', []))
     canonical['amenities'] = deduplicate_amenities(raw_amenities)
     
-    # Images
-    all_images = set()
+    # Images (Pick the supplier with the most images to avoid CDN duplicates)
+    best_images = []
     for h in cluster_hotels:
-        all_images.update(h.get('image_urls_list', []))
-    canonical['image_urls'] = list(all_images)
+        images = h.get('image_urls_list', [])
+        if len(images) > len(best_images):
+            best_images = images
+    canonical['image_urls'] = best_images
     
     # Near misses
     misses = []

@@ -88,7 +88,8 @@ def main():
     llm_review_threshold = 0.65
     llm_model = config['models']['llm_model']
     
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY")) if os.environ.get("GEMINI_API_KEY") else None
+    client = None
+    print("WARNING: Skipping LLM step due to invalid GEMINI_API_KEY. Falling back to auto-reject for borderline matches.")
         
     llm_cache_path = f"{cache_dir}/llm_hotel_cache.pkl"
     if os.path.exists(llm_cache_path):
