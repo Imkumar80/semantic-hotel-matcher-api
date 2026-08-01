@@ -47,17 +47,45 @@ graph TD
 My total API spend for this pipeline was exactly **$0.00**. 
 Rather than blindly passing tens of thousands of messy room strings to an LLM and burning hundreds of dollars in API credits, I engineered a local $O(1)$ NLP semantic extractor (FlashText) that successfully parsed 87% of the dataset instantly on a local CPU. By strictly bounding the LLM to act only as a fallback for the remaining 13% of unstructured edge cases (which I ultimately skipped running because the Free Tier API rate limits were hit, and it was not sensible to buy API credits just for this project).
 
-## 🏗️ Deployment 
+## 🚀 Quickstart & Setup
 
-The entire pipeline and API are fully dockerized. To build the SQLite database and start the web server in one command:
+### Option 1: Docker (Recommended)
+The entire pipeline, database, and frontend UI are fully dockerized. You don't need to install anything except Docker.
 
 ```bash
+git clone https://github.com/Imkumar80/semantic-hotel-matcher-api.git
+cd semantic-hotel-matcher-api
 docker compose up --build
 ```
-*(Note: If you want to rebuild the database from scratch and hit the LLM parsing logic, provide a `.env` with `GEMINI_API_KEY` and run `uv run pipeline/run_all.py` first).*
+Once running, **open your browser to [http://localhost:8000](http://localhost:8000)** to view the interactive UI!
 
-Once running, **open your browser to [http://localhost:8000](http://localhost:8000)** to view the beautiful interactive UI!
+### Option 2: Local Development (Without Docker)
+If you want to run the python data pipeline from scratch or develop the frontend locally:
 
+**1. Install Python Dependencies (Using `uv`)**
+```bash
+pip install uv
+uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
+uv pip install --system -r pyproject.toml
+```
+
+**2. Re-run the Entity Resolution Pipeline (Optional)**
+*(Note: Requires a `.env` file with `GEMINI_API_KEY` if you want the LLM to parse messy edge-cases)*
+```bash
+uv run pipeline/run_all.py
+```
+
+**3. Run the FastAPI Backend**
+```bash
+uvicorn api.main:app --reload --port 8000
+```
+
+**4. Run the React Frontend**
+```bash
+cd frontend
+npm install
+npm run dev
+```
 ---
 
 ## 📡 API Contract & OpenAPI Sketch
