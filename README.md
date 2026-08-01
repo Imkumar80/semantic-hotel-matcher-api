@@ -82,7 +82,7 @@ curl "http://localhost:8000/hotels/9bb55445-2093-4719-9862-1ce546c0a7d8"
 ### The `/hotels/{id}` Response Payload
 ```json
 {
-  "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "id": "9bb55445-2093-4719-9862-1ce546c0a7d8",
   "name": "Hilton Bengaluru Embassy GolfLinks",
   "address": "Embassy GolfLinks Business Park, Bangalore",
   "lat": 12.9567,
@@ -108,15 +108,17 @@ curl "http://localhost:8000/hotels/9bb55445-2093-4719-9862-1ce546c0a7d8"
         "capacity": 2,
         "bed_type": "King",
         "view": "City",
+        "meal_plan": "Breakfast",
         "features": ["Air Conditioning", "Bathtub", "Mini-bar"],
         "room_class": "Deluxe"
       },
       "room_b": {
         "id": "B-RM-001",
-        "name": "King Deluxe - City View",
+        "name": "King Deluxe - City View - Breakfast Included",
         "capacity": 2,
         "bed_type": "King",
         "view": "City",
+        "meal_plan": "Breakfast",
         "features": ["Air Conditioning", "Bathtub"],
         "room_class": "Deluxe"
       }
