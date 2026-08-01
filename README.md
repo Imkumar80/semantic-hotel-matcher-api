@@ -135,8 +135,8 @@ The entity resolution pipeline is broken into 6 distinct scripts executed via `u
 1. **`01_preprocess.py`**: Normalizes case, tokenizes strings, and aggressively maps amenities to a standard vocabulary using Regex to prevent downstream fuzzy-matching failure.
 2. **`02_splink_match.py`**: Instead of a simple heuristic score, we implemented **Splink** (Probabilistic Record Linkage) backed by DuckDB. It learns feature weights (Name, Coordinates, Address) completely unsupervised via Expectation-Maximization.
 3. **`03_resolve_hotels.py`**: Treats the Splink probabilistic matches as a Weighted Graph using `NetworkX`. When connected components are clustered into a canonical hotel, the underlying `SAME_AS` edges and specific probabilities are retained, preventing identity contamination in downstream AI systems.
-4. **`05_parse_rooms.py`**: Extracts structured dimensions (capacity, bed type, view, class) from completely unstructured room strings using an O(1) **Smart Extractor** (FlashText + RapidFuzz).
-5. **`06_match_rooms.py`**: Maps parsed rooms between canonical hotels using Jaccard similarity and exact matching on capacity/beds.
+4. **`05_parse_rooms.py`**: Extracts structured dimensions (capacity, bed type, view, meal plan, class) from completely unstructured room strings using an O(1) **Smart Extractor** (FlashText + RapidFuzz).
+5. **`06_match_rooms.py`**: Maps parsed rooms between canonical hotels using Jaccard similarity and exact matching on capacity/beds, penalizing mismatched meal plans.
 6. **`07_build_db.py`**: Commits the entire graph into a relational SQLite database schema.
 
 ### 🔄 How the Pipeline Evolved (Failures & Fixes)
@@ -181,7 +181,7 @@ I validated the accuracy of the Splink + NetworkX pipeline not just by looking a
 
 ### 1. NLP Room Parsing Upgrade
 The brittle regex-based room parsing logic was ripped out and replaced with an industry-standard NLP approach:
-- **Unified Taxonomy:** Defined a strict mapping dictionary (e.g. "sofa bed" -> Sofa, "dlx" -> Deluxe, "ocean view" -> Sea).
+- **Unified Taxonomy:** Defined a strict mapping dictionary (e.g. "sofa bed" -> Sofa, "dlx" -> Deluxe, "ocean view" -> Sea, "breakfast included" -> Breakfast).
 - **FlashText Extraction:** Used a `KeywordProcessor` to extract all known taxonomy terms in a single $O(N)$ pass, bypassing complex regex.
 - **RapidFuzz Fallback:** If a word in the room name isn't explicitly in the dictionary (e.g., due to a typo), we check its fuzzy similarity against our vocabulary. If it matches at $\ge 85\%$, we automatically correct it!
 
