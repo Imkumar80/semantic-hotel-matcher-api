@@ -115,13 +115,15 @@ def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df
         raw_amenities.extend(h.get('amenities_list', []))
     canonical['amenities'] = deduplicate_amenities(raw_amenities)
     
-    # Images (Pick the supplier with the most images to avoid CDN duplicates)
-    best_images = []
+    # Images (Honest merge of all provided URLs)
+    all_images = []
+    seen = set()
     for h in cluster_hotels:
-        images = h.get('image_urls_list', [])
-        if len(images) > len(best_images):
-            best_images = images
-    canonical['image_urls'] = best_images
+        for img in h.get('image_urls_list', []):
+            if img not in seen:
+                seen.add(img)
+                all_images.append(img)
+    canonical['image_urls'] = all_images
     
     # Near misses
     misses = []

@@ -19,6 +19,7 @@ class ParsedRoom(BaseModel):
     capacity: Optional[int]
     bed_type: Optional[str]
     view: Optional[str]
+    meal_plan: Optional[str]
     features: List[str]
     room_class: Optional[str]
 
@@ -52,11 +53,17 @@ for v in ['city view', 'city', 'pool view', 'pool', 'sea view', 'sea', 'ocean vi
     kp.add_keyword(v, ('view', canonical))
 
 # Features
-for f in ['breakfast', 'balcony', 'air conditioning', 'ac', 'wi-fi', 'wifi', 'jacuzzi', 'kitchen', 'patio']:
+for f in ['balcony', 'air conditioning', 'ac', 'wi-fi', 'wifi', 'jacuzzi', 'kitchen', 'patio']:
     canonical = f.title()
     if f in ['ac', 'air conditioning']: canonical = 'AC'
     if f in ['wifi', 'wi-fi']: canonical = 'WiFi'
     kp.add_keyword(f, ('features', canonical))
+
+# Meal Plans
+for m in ['breakfast', 'half board', 'full board', 'all inclusive', 'room only']:
+    canonical = m.title()
+    if canonical == 'Breakfast': canonical = 'Breakfast Included'
+    kp.add_keyword(m, ('meal_plan', canonical))
 
 # Capacities
 for i in range(1, 10):
@@ -73,7 +80,8 @@ FUZZ_VOCAB = {
     'bed_type': ['single', 'twin', 'double', 'king', 'queen', 'bunk', 'sofa bed'],
     'room_class': ['standard', 'deluxe', 'superior', 'executive', 'premium', 'suite', 'studio', 'villa', 'apartment'],
     'view': ['city view', 'pool view', 'sea view', 'ocean view', 'garden view', 'lake view'],
-    'features': ['breakfast', 'balcony', 'air conditioning', 'wifi', 'jacuzzi', 'kitchen', 'patio']
+    'features': ['balcony', 'air conditioning', 'wifi', 'jacuzzi', 'kitchen', 'patio'],
+    'meal_plan': ['breakfast', 'half board', 'full board', 'all inclusive', 'room only']
 }
 
 def smart_extract(name: str):
@@ -81,6 +89,7 @@ def smart_extract(name: str):
         'capacity': None,
         'bed_type': None,
         'view': None,
+        'meal_plan': None,
         'features': set(),
         'room_class': None
     }
@@ -134,7 +143,7 @@ def call_gemini_rooms(client, model_name, prompt):
 
 def batch_llm_parse(names, client, model_name):
     if not client:
-        return [ParsedRoom(capacity=None, bed_type=None, view=None, features=[], room_class=None) for _ in names]
+        return [ParsedRoom(capacity=None, bed_type=None, view=None, meal_plan=None, features=[], room_class=None) for _ in names]
         
     prompt = "Parse the following list of room names into structured attributes. Preserve the order exactly.\n\n"
     for i, n in enumerate(names):

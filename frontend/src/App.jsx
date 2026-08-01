@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from './lib/utils';
-import { Search, MapPin, Star, ShieldCheck, Users, Bed, Eye, Info } from 'lucide-react';
+import { Search, MapPin, Star, ShieldCheck, Users, Bed, Eye, Info, Coffee } from 'lucide-react';
 
 function GridBackground({ children }) {
   return (
@@ -45,7 +45,7 @@ export default function App() {
     setLoadingList(true);
     try {
       // Use relative path since it will be served by FastAPI
-      const res = await fetch(`/hotels?search=${encodeURIComponent(q)}&size=50`);
+      const res = await fetch(`/hotels?search=${encodeURIComponent(q)}&size=1000`);
       if (res.ok) {
         const data = await res.json();
         setHotels(data.items || []);
@@ -236,14 +236,18 @@ export default function App() {
                       const bed = rm.room_a?.bed_type || rm.room_b?.bed_type || 'Standard Bed';
                       const view = rm.room_a?.view || rm.room_b?.view || 'Standard View';
                       const roomClass = rm.room_a?.room_class || rm.room_b?.room_class || 'Standard Class';
+                      const mealPlan = rm.room_a?.meal_plan || rm.room_b?.meal_plan;
                       
                       const features = Array.from(new Set([...(rm.room_a?.features || []), ...(rm.room_b?.features || [])])).slice(0,3);
 
                       return (
                         <div key={i} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-purple-500/30 transition-all group">
                           <div className="p-6 relative">
-                            <div className="absolute top-4 right-4 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-purple-400 text-xs font-bold">
-                              {(rm.score * 100).toFixed(0)}% Match
+                            <div className={cn(
+                              "absolute top-4 right-4 px-2.5 py-1 border rounded-full text-xs font-bold",
+                              (!rm.room_a || !rm.room_b) ? "bg-gray-500/10 border-gray-500/20 text-gray-400" : "bg-purple-500/10 border-purple-500/20 text-purple-400"
+                            )}>
+                              {(!rm.room_a || !rm.room_b) ? "Unmatched" : `${(rm.score * 100).toFixed(0)}% Match`}
                             </div>
                             <h4 className="text-lg font-semibold text-white mb-4 pr-16">{bestName}</h4>
                             
@@ -262,6 +266,12 @@ export default function App() {
                               </div>
                             </div>
                             
+                            {mealPlan && (
+                              <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
+                                <Coffee className="w-4 h-4 text-orange-400" /> {mealPlan}
+                              </div>
+                            )}
+
                             {features.length > 0 && (
                               <div className="flex flex-wrap gap-2 mb-6">
                                 {features.map((f, idx) => (

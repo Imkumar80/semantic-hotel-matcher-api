@@ -11,13 +11,14 @@ class RoomDetail(BaseModel):
     capacity: Optional[int]
     bed_type: Optional[str]
     view: Optional[str]
+    meal_plan: Optional[str]
     features: List[str]
     room_class: Optional[str]
 
 class MatchedRoom(BaseModel):
     score: float
-    room_a: RoomDetail
-    room_b: RoomDetail
+    room_a: Optional[RoomDetail] = None
+    room_b: Optional[RoomDetail] = None
 
 class CanonicalHotelSummary(BaseModel):
     id: str

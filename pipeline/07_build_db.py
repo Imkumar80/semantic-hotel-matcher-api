@@ -41,6 +41,7 @@ def create_tables(conn):
         capacity INTEGER,
         bed_type TEXT,
         view TEXT,
+        meal_plan TEXT,
         features TEXT,
         room_class TEXT,
         source TEXT
@@ -102,17 +103,16 @@ def main():
         with open(f"{cache_dir}/room_parse_cache.pkl", "rb") as f:
             room_cache = pickle.load(f)
             
-        def insert_rooms(df, source_label):
+        def insert_rooms(df, source):
             for _, row in df.iterrows():
-                name = row['name']
-                parsed = room_cache.get(name, {})
+                parsed = room_cache.get(row['name'], {})
                 c.execute('''
-                INSERT INTO rooms (room_id, hotel_id, name, capacity, bed_type, view, features, room_class, source)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO rooms (room_id, hotel_id, name, capacity, bed_type, view, meal_plan, features, room_class, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    row['room_id'], row['hotel_id'], name,
-                    parsed.get('capacity'), parsed.get('bed_type'), parsed.get('view'),
-                    "|".join(parsed.get('features', [])), parsed.get('room_class'), source_label
+                    row['room_id'], row['hotel_id'], row['name'],
+                    parsed.get('capacity'), parsed.get('bed_type'), parsed.get('view'), parsed.get('meal_plan'),
+                    "|".join(parsed.get('features', [])), parsed.get('room_class'), source
                 ))
                 
         insert_rooms(df_rooms_a, 'A')

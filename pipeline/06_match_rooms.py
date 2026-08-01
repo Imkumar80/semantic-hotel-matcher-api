@@ -39,6 +39,12 @@ def compute_room_sim(room_a_name, room_b_name, room_a_parsed, room_b_parsed):
         else:
             base_score = base_score * 0.7 # Heavy penalty for conflicting capacity
             
+    if room_a_parsed.get('meal_plan') and room_b_parsed.get('meal_plan'):
+        if room_a_parsed['meal_plan'] == room_b_parsed['meal_plan']:
+            base_score = min(1.0, base_score + 0.1) # Boost for exact meal match
+        else:
+            base_score = base_score * 0.7 # Heavy penalty for conflicting meal plans
+            
     return base_score
 
 def main():

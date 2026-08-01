@@ -25,7 +25,7 @@ def health_check():
 def search_hotels(
     search: str = Query("", description="Search by name or address"),
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    size: int = Query(20, ge=1),
     db: sqlite3.Connection = Depends(get_db)
 ):
     offset = (page - 1) * size
@@ -85,30 +85,81 @@ def get_hotel(hotel_id: str, db: sqlite3.Connection = Depends(get_db)):
     source_b = row['source_b_id']
     
     matched_rooms = []
-    if source_a and source_b:
-        c.execute("""
+    
+    a_ids = source_a.split(',') if source_a else []
+    b_ids = source_b.split(',') if source_b else []
+    
+    if a_ids and b_ids:
+        placeholders_a = ','.join('?' * len(a_ids))
+        placeholders_b = ','.join('?' * len(b_ids))
+        
+        matched_a_ids = set()
+        matched_b_ids = set()
+        
+        # 1. Get Matched Rooms
+        c.execute(f"""
             SELECT 
                 rm.score,
-                ra.room_id as a_id, ra.name as a_name, ra.capacity as a_cap, ra.bed_type as a_bed, ra.view as a_view, ra.features as a_feat, ra.room_class as a_class,
-                rb.room_id as b_id, rb.name as b_name, rb.capacity as b_cap, rb.bed_type as b_bed, rb.view as b_view, rb.features as b_feat, rb.room_class as b_class
+                ra.room_id as a_id, ra.name as a_name, ra.capacity as a_cap, ra.bed_type as a_bed, ra.view as a_view, ra.meal_plan as a_meal, ra.features as a_feat, ra.room_class as a_class,
+                rb.room_id as b_id, rb.name as b_name, rb.capacity as b_cap, rb.bed_type as b_bed, rb.view as b_view, rb.meal_plan as b_meal, rb.features as b_feat, rb.room_class as b_class
             FROM room_matches rm
             LEFT JOIN rooms ra ON rm.room_a_id = ra.room_id
             LEFT JOIN rooms rb ON rm.room_b_id = rb.room_id
-            WHERE rm.hotel_a_id = ? AND rm.hotel_b_id = ?
-        """, (source_a, source_b))
+            WHERE rm.hotel_a_id IN ({placeholders_a}) AND rm.hotel_b_id IN ({placeholders_b})
+        """, tuple(a_ids + b_ids))
         
         for rm in c.fetchall():
+            matched_a_ids.add(rm['a_id'])
+            matched_b_ids.add(rm['b_id'])
             room_a = schemas.RoomDetail(
-                id=rm['a_id'], name=rm['a_name'], capacity=rm['a_cap'], bed_type=rm['a_bed'], view=rm['a_view'],
-                features=[x for x in (rm['a_feat'] or "").split('|') if x],
-                room_class=rm['a_class']
+                id=rm['a_id'], name=rm['a_name'], capacity=rm['a_cap'], bed_type=rm['a_bed'], view=rm['a_view'], meal_plan=rm['a_meal'],
+                features=[x for x in (rm['a_feat'] or "").split('|') if x], room_class=rm['a_class']
             )
             room_b = schemas.RoomDetail(
-                id=rm['b_id'], name=rm['b_name'], capacity=rm['b_cap'], bed_type=rm['b_bed'], view=rm['b_view'],
-                features=[x for x in (rm['b_feat'] or "").split('|') if x],
-                room_class=rm['b_class']
+                id=rm['b_id'], name=rm['b_name'], capacity=rm['b_cap'], bed_type=rm['b_bed'], view=rm['b_view'], meal_plan=rm['b_meal'],
+                features=[x for x in (rm['b_feat'] or "").split('|') if x], room_class=rm['b_class']
             )
             matched_rooms.append(schemas.MatchedRoom(score=rm['score'], room_a=room_a, room_b=room_b))
+            
+        # 2. Get Unmatched A Rooms
+        c.execute(f"SELECT * FROM rooms WHERE hotel_id IN ({placeholders_a})", tuple(a_ids))
+        for ra in c.fetchall():
+            if ra['room_id'] not in matched_a_ids:
+                room_a = schemas.RoomDetail(
+                    id=ra['room_id'], name=ra['name'], capacity=ra['capacity'], bed_type=ra['bed_type'], view=ra['view'], meal_plan=ra['meal_plan'],
+                    features=[x for x in (ra['features'] or "").split('|') if x], room_class=ra['room_class']
+                )
+                matched_rooms.append(schemas.MatchedRoom(score=0.0, room_a=room_a, room_b=None))
+                
+        # 3. Get Unmatched B Rooms
+        c.execute(f"SELECT * FROM rooms WHERE hotel_id IN ({placeholders_b})", tuple(b_ids))
+        for rb in c.fetchall():
+            if rb['room_id'] not in matched_b_ids:
+                room_b = schemas.RoomDetail(
+                    id=rb['room_id'], name=rb['name'], capacity=rb['capacity'], bed_type=rb['bed_type'], view=rb['view'], meal_plan=rb['meal_plan'],
+                    features=[x for x in (rb['features'] or "").split('|') if x], room_class=rb['room_class']
+                )
+                matched_rooms.append(schemas.MatchedRoom(score=0.0, room_a=None, room_b=room_b))
+            
+    elif a_ids:
+        placeholders_a = ','.join('?' * len(a_ids))
+        c.execute(f"SELECT * FROM rooms WHERE hotel_id IN ({placeholders_a})", tuple(a_ids))
+        for ra in c.fetchall():
+            room_a = schemas.RoomDetail(
+                id=ra['room_id'], name=ra['name'], capacity=ra['capacity'], bed_type=ra['bed_type'], view=ra['view'], meal_plan=ra['meal_plan'],
+                features=[x for x in (ra['features'] or "").split('|') if x], room_class=ra['room_class']
+            )
+            matched_rooms.append(schemas.MatchedRoom(score=0.0, room_a=room_a, room_b=None))
+            
+    elif b_ids:
+        placeholders_b = ','.join('?' * len(b_ids))
+        c.execute(f"SELECT * FROM rooms WHERE hotel_id IN ({placeholders_b})", tuple(b_ids))
+        for rb in c.fetchall():
+            room_b = schemas.RoomDetail(
+                id=rb['room_id'], name=rb['name'], capacity=rb['capacity'], bed_type=rb['bed_type'], view=rb['view'], meal_plan=rb['meal_plan'],
+                features=[x for x in (rb['features'] or "").split('|') if x], room_class=rb['room_class']
+            )
+            matched_rooms.append(schemas.MatchedRoom(score=0.0, room_a=None, room_b=room_b))
 
     amenities = [x for x in (row['amenities'] or "").split('|') if x]
     image_urls = [x for x in (row['image_urls'] or "").split('|') if x]
