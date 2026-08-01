@@ -73,9 +73,9 @@ curl "http://localhost:8000/hotels?search=Hilton&size=5"
 ```
 *Returns a paginated list of canonical hotels matching the query.*
 
-**2. Get Canonical Hotel Details**
+**2. Get the full detailed canonical profile for a specific hotel (Replace UUID with one from the search above):**
 ```bash
-curl "http://localhost:8000/hotels/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+curl "http://localhost:8000/hotels/9bb55445-2093-4719-9862-1ce546c0a7d8"
 ```
 *Returns the deeply nested canonical record. A frontend could easily build a complete hotel page using just this one response.*
 
