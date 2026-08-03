@@ -60,32 +60,64 @@ docker compose up --build
 Once running, **open your browser to [http://localhost:8000](http://localhost:8000)** to view the interactive UI!
 
 ### Option 2: Local Development (Without Docker)
-If you want to run the python data pipeline from scratch or develop the frontend locally:
+For developers who want to modify the Python data pipeline, extend the FastAPI backend, or work on the React frontend locally.
 
-**1. Install Python Dependencies (Using `uv`)**
+#### Prerequisites
+- **Python 3.10+**
+- **Node.js 18+**
+- **Git**
+
+#### 1. Backend Setup & Dependencies
+We use `uv` for extremely fast Python dependency management.
+
 ```bash
+# Clone the repository if you haven't already
+git clone https://github.com/Imkumar80/semantic-hotel-matcher-api.git
+cd semantic-hotel-matcher-api
+
+# Create a virtual environment and activate it
+python -m venv .venv
+source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
+
+# Install dependencies using uv
 pip install uv
-uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
-uv pip install --system -r pyproject.toml
+uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+uv pip install -r pyproject.toml
 ```
 
-**2. Re-run the Entity Resolution Pipeline (Optional)**
-*(Note: Requires a `.env` file with `GEMINI_API_KEY` if you want the LLM to parse messy edge-cases)*
+#### 2. Environment Variables (Optional)
+If you want to re-run the data pipeline and use the LLM to parse the 13% of messy edge-cases, you need a Gemini API key.
+Create a `.env` file in the root directory:
 ```bash
+touch .env
+```
+Add your API key to the `.env` file:
+```env
+GEMINI_API_KEY="your_api_key_here"
+```
+
+#### 3. Re-run the Entity Resolution Pipeline (Optional)
+The repository comes with a pre-built SQLite database in `data/canonical/`. If you want to process the raw CSVs from scratch:
+```bash
+# This runs the 6-step pipeline (preprocessing, splink matching, graph resolution, etc.)
 uv run pipeline/run_all.py
 ```
 
-**3. Run the FastAPI Backend**
+#### 4. Start the FastAPI Backend
 ```bash
+# Starts the backend on http://localhost:8000
 uvicorn api.main:app --reload --port 8000
 ```
+*You can now visit [http://localhost:8000/docs](http://localhost:8000/docs) to view the interactive API documentation.*
 
-**4. Run the React Frontend**
+#### 5. Start the React Frontend
+Open a new terminal window, navigate to the frontend directory, and start the Vite development server.
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+*The UI will be accessible at [http://localhost:5173](http://localhost:5173).*
 ---
 
 ## 📡 API Contract & OpenAPI Sketch
