@@ -125,12 +125,11 @@ def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df
                 all_images.append(img)
     canonical['image_urls'] = all_images
     
-    # Near misses
     misses = []
     for h in cluster_hotels:
         m = near_misses.get(h['id'])
         if m:
-            misses.append(m)
+            misses.extend(m)
     canonical['near_miss_candidates'] = misses
     
     return canonical
