@@ -99,28 +99,37 @@ def main():
         matched_ra_ids = set()
         matched_rb_ids = set()
         
-        # Assign greedy
+        import networkx as nx
+        B = nx.Graph()
+        
+        # Add nodes and edges to bipartite graph
         for ra, rb, sim in pairs:
-            # We allow 1-to-many. Which means one room can match multiple.
-            # "a coarse room on one side may legitimately match several fare variants on the other"
-            # We won't restrict matched_ra_ids or matched_rb_ids strictly 1-1.
-            # We just add all above-threshold edges to matched_rooms_out.
-            # But usually greedy means we might consume them. The instruction says:
-            # "Greedy one-to-many matching above rooms.match_threshold"
-            # We'll just include all edges that pass threshold, or restrict one side?
-            # Let's restrict side A to one-to-many (A matches many B). We'll track matched_rb_ids to only be consumed once.
-            if rb['room_id'] not in matched_rb_ids:
-                matched_rooms_out.append({
-                    'hotel_a_id': a_id,
-                    'hotel_b_id': b_id,
-                    'room_a_id': ra['room_id'],
-                    'room_b_id': rb['room_id'],
-                    'score': sim,
-                    'parsed_a': room_cache.get(ra['name'], {}),
-                    'parsed_b': room_cache.get(rb['name'], {})
-                })
-                matched_rb_ids.add(rb['room_id'])
-                matched_ra_ids.add(ra['room_id'])
+            # We prefix to ensure disjoint sets for bipartite matching
+            a_node = f"A_{ra['room_id']}"
+            b_node = f"B_{rb['room_id']}"
+            B.add_edge(a_node, b_node, weight=sim, ra=ra, rb=rb)
+            
+        # Compute optimal 1-to-1 matching (prevents greedy suboptimal choices)
+        matching = nx.max_weight_matching(B, maxcardinality=False)
+        
+        for u, v in matching:
+            # max_weight_matching returns edges as (u, v) in no particular order
+            a_node = u if str(u).startswith("A_") else v
+            b_node = v if str(u).startswith("A_") else u
+            
+            sim = B[a_node][b_node]['weight']
+            ra = B[a_node][b_node]['ra']
+            rb = B[a_node][b_node]['rb']
+            
+            matched_rooms_out.append({
+                'hotel_a_id': a_id,
+                'hotel_b_id': b_id,
+                'room_a_id': ra['room_id'],
+                'room_b_id': rb['room_id'],
+                'score': sim,
+                'parsed_a': room_cache.get(ra['name'], {}),
+                'parsed_b': room_cache.get(rb['name'], {})
+            })
                 
     df_room_matches = pd.DataFrame(matched_rooms_out)
     if not df_room_matches.empty:

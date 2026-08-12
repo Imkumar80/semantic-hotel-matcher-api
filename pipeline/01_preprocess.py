@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 import os
+from typing import Any
 
 def normalize_name(name: str) -> str:
     if pd.isna(name):
@@ -21,16 +22,23 @@ def parse_pipe_separated(val) -> list:
     seen = set()
     return [x for x in items if not (x in seen or seen.add(x))]
 
-def extract_address_components(addr: str):
-    if pd.isna(addr):
+def extract_address_components(addr: Any):
+    try:
+        if pd.isna(addr) or not isinstance(addr, str):
+            if not isinstance(addr, (int, float)) or pd.isna(addr):
+                return "", ""
+            addr = str(addr)
+            
+        addr = str(addr).lower()
+        addr = re.sub(r'[^\w\s]', ' ', addr)
+        addr = re.sub(r'\s+', ' ', addr).strip()
+        
+        # Try to extract numbers (often building numbers)
+        numbers = " ".join(re.findall(r'\b\d+\b', addr))
+        return addr, numbers
+    except Exception as e:
+        print(f"Warning: Failed to parse address '{addr}': {e}")
         return "", ""
-    addr = str(addr).lower()
-    addr = re.sub(r'[^\w\s]', ' ', addr)
-    addr = re.sub(r'\s+', ' ', addr).strip()
-    
-    # Try to extract numbers (often building numbers)
-    numbers = " ".join(re.findall(r'\b\d+\b', addr))
-    return addr, numbers
 
 def process_hotels(df: pd.DataFrame, source_name: str) -> pd.DataFrame:
     print(f"--- Processing Hotels ({source_name}) ---")
@@ -68,8 +76,6 @@ def process_hotels(df: pd.DataFrame, source_name: str) -> pd.DataFrame:
             if pd.isna(lat) or pd.isna(lon):
                 return False
             if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-                return False
-            if not (12.0 <= lat <= 14.0 and 76.0 <= lon <= 79.0):
                 return False
             return True
         except (ValueError, TypeError):

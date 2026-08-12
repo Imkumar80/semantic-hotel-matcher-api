@@ -83,9 +83,8 @@ def main():
     df_b = pd.read_pickle(f"{cache_dir}/hotels_b_processed.pkl").set_index('id')
     df_scored = pd.read_pickle(f"{cache_dir}/scored_pairs.pkl")
     
-    # We update thresholds for splink
-    auto_match_threshold = 0.85
-    llm_review_threshold = 0.65
+    auto_match_threshold = config['matching']['auto_match_threshold']
+    llm_review_threshold = config['matching']['llm_review_threshold']
     llm_model = config['models']['llm_model']
     
     client = None
@@ -117,20 +116,7 @@ def main():
         if score >= auto_match_threshold:
             is_match = True
             stats['auto_match'] += 1
-            
-            # Calculate a continuous confidence score so the UI doesn't look hardcoded to 96%
-            from rapidfuzz import fuzz
-            hotel_a_data = df_a.loc[a_id]
-            hotel_b_data = df_b.loc[b_id]
-            
-            name_sim = fuzz.ratio(str(hotel_a_data.get('normalized_name', '')), str(hotel_b_data.get('normalized_name', ''))) / 100.0
-            addr_sim = fuzz.ratio(str(hotel_a_data.get('norm_addr', '')), str(hotel_b_data.get('norm_addr', ''))) / 100.0
-            
-            # Blend the continuous similarities (70% name, 30% address)
-            continuous_score = (name_sim * 0.7) + (addr_sim * 0.3)
-            
-            # Use the continuous score directly for the UI display
-            final_confidence = continuous_score
+            final_confidence = score
         elif score >= llm_review_threshold:
             hotel_a_data = df_a.loc[a_id].to_dict()
             hotel_a_data['id'] = a_id
@@ -152,9 +138,14 @@ def main():
             G.add_edge(a_id, b_id, weight=final_confidence)
         else:
             if a_id not in near_misses:
-                near_misses[a_id] = {'miss_id': b_id, 'score': score}
+                near_misses[a_id] = []
+            if len(near_misses[a_id]) < 5:
+                near_misses[a_id].append({'miss_id': b_id, 'score': score})
+                
             if b_id not in near_misses:
-                near_misses[b_id] = {'miss_id': a_id, 'score': score}
+                near_misses[b_id] = []
+            if len(near_misses[b_id]) < 5:
+                near_misses[b_id].append({'miss_id': a_id, 'score': score})
                 
     with open(llm_cache_path, "wb") as f:
         pickle.dump(llm_cache, f)
