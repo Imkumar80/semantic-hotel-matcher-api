@@ -55,6 +55,10 @@ def create_tables(conn):
         room_b_id TEXT,
         score REAL
     );
+    CREATE INDEX idx_rooms_hotel_id ON rooms(hotel_id);
+    CREATE INDEX idx_rooms_room_id ON rooms(room_id);
+    CREATE INDEX idx_room_matches_hotel_a_id ON room_matches(hotel_a_id);
+    CREATE INDEX idx_room_matches_room_ids ON room_matches(room_a_id, room_b_id);
     ''')
     conn.commit()
 

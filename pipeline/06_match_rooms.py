@@ -2,6 +2,7 @@ import pandas as pd
 import yaml
 import pickle
 import os
+import networkx as nx
 
 def load_config():
     with open("config/config.yaml", "r") as f:
@@ -99,7 +100,6 @@ def main():
         matched_ra_ids = set()
         matched_rb_ids = set()
         
-        import networkx as nx
         B = nx.Graph()
         
         # Add nodes and edges to bipartite graph

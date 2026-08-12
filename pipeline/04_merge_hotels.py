@@ -127,9 +127,11 @@ def build_canonical(nodes, a_nodes, b_nodes, cluster_confidence, edges, df_a, df
     
     misses = []
     for h in cluster_hotels:
-        m = near_misses.get(h['id'])
-        if m:
+        m = near_misses.get(h['id'], [])
+        if isinstance(m, list):
             misses.extend(m)
+        elif m:
+            misses.append(m)
     canonical['near_miss_candidates'] = misses
     
     return canonical

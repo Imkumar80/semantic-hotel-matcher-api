@@ -139,13 +139,13 @@ def main():
         else:
             if a_id not in near_misses:
                 near_misses[a_id] = []
-            if len(near_misses[a_id]) < 5:
-                near_misses[a_id].append({'miss_id': b_id, 'score': score})
+            near_misses[a_id].append({'miss_id': b_id, 'score': score})
+            near_misses[a_id] = sorted(near_misses[a_id], key=lambda x: x['score'], reverse=True)[:5]
                 
             if b_id not in near_misses:
                 near_misses[b_id] = []
-            if len(near_misses[b_id]) < 5:
-                near_misses[b_id].append({'miss_id': a_id, 'score': score})
+            near_misses[b_id].append({'miss_id': a_id, 'score': score})
+            near_misses[b_id] = sorted(near_misses[b_id], key=lambda x: x['score'], reverse=True)[:5]
                 
     with open(llm_cache_path, "wb") as f:
         pickle.dump(llm_cache, f)
