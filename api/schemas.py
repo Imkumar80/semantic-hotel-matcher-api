@@ -44,3 +44,18 @@ class PaginatedHotels(BaseModel):
     total: int
     page: int
     size: int
+
+class ProjectStatus(BaseModel):
+    project_id: str
+    name: str
+    status: str
+    progress: int
+    created_at: str
+    updated_at: str
+    stage: Optional[str] = None
+    hotel_count: Optional[int] = None
+    error: Optional[str] = None
+    room_count: Optional[int] = None
+
+class ProjectCreated(ProjectStatus):
+    api_key: str

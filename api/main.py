@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, Depends, File, Header, HTTPException, Query, UploadFile
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
@@ -6,6 +6,7 @@ import sqlite3
 import os
 from .db import get_db
 from . import schemas
+from . import projects
 
 app = FastAPI(title="semantic-hotel-matcher-api")
 
@@ -20,6 +21,136 @@ app.add_middleware(
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.post("/v1/projects", response_model=schemas.ProjectCreated, status_code=201)
+def create_project(name: str | None = Query(None)):
+    """Create an isolated workspace for one pair of supplier datasets."""
+    return projects.create_project(name)
+
+
+def require_project_key(project_id: str, x_api_key: str | None = Header(None)) -> None:
+    try:
+        is_valid = projects.verify_api_key(project_id, x_api_key)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+    if not is_valid:
+        raise HTTPException(status_code=401, detail="A valid X-API-Key header is required")
+
+
+@app.post("/v1/projects/{project_id}/uploads", response_model=schemas.ProjectStatus)
+async def upload_project_data(
+    project_id: str,
+    supplier_a_hotels: UploadFile = File(...),
+    supplier_b_hotels: UploadFile = File(...),
+    rooms_a: UploadFile | None = File(None),
+    rooms_b: UploadFile | None = File(None),
+    _: None = Depends(require_project_key),
+):
+    """Upload hotel CSVs and, optionally, a pair of room CSVs."""
+    try:
+        projects.save_upload(project_id, "supplier_a.csv", await supplier_a_hotels.read())
+        projects.save_upload(project_id, "supplier_b.csv", await supplier_b_hotels.read())
+        if (rooms_a is None) != (rooms_b is None):
+            raise ValueError("Provide both rooms_a and rooms_b, or neither")
+        if rooms_a and rooms_b:
+            projects.save_upload(project_id, "rooms_a.csv", await rooms_a.read())
+            projects.save_upload(project_id, "rooms_b.csv", await rooms_b.read())
+        return projects.write_status(project_id, status="uploaded", progress=0, stage="ready to run")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+
+
+@app.post("/v1/projects/{project_id}/runs", response_model=schemas.ProjectStatus, status_code=202)
+def start_project_run(project_id: str, background_tasks: BackgroundTasks, _: None = Depends(require_project_key)):
+    """Start matching uploaded records without blocking the HTTP request."""
+    try:
+        status = projects.read_status(project_id)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+    if status["status"] == "running":
+        raise HTTPException(status_code=409, detail="A pipeline run is already in progress")
+    raw_dir = projects.project_path(project_id) / "raw"
+    if not (raw_dir / "supplier_a.csv").exists() or not (raw_dir / "supplier_b.csv").exists():
+        raise HTTPException(status_code=409, detail="Upload both supplier hotel CSVs before starting a run")
+    status = projects.write_status(project_id, status="queued", progress=0, stage="queued", error=None)
+    background_tasks.add_task(projects.run_project, project_id)
+    return status
+
+
+@app.get("/v1/projects/{project_id}", response_model=schemas.ProjectStatus)
+def get_project_status(project_id: str, _: None = Depends(require_project_key)):
+    try:
+        return projects.read_status(project_id)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+
+
+def get_project_db(project_id: str):
+    try:
+        db_path = projects.project_path(project_id) / "hotels.db"
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+    if not db_path.exists():
+        raise HTTPException(status_code=409, detail="Results are not ready; check the project status")
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+@app.get("/v1/projects/{project_id}/hotels", response_model=schemas.PaginatedHotels)
+def search_project_hotels(
+    project_id: str,
+    search: str = Query("", description="Search by name or address"),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    _: None = Depends(require_project_key),
+    db: sqlite3.Connection = Depends(get_project_db),
+):
+    offset = (page - 1) * size
+    params: list[object] = []
+    where = ""
+    if search:
+        where = " WHERE name LIKE ? OR address LIKE ?"
+        params = [f"%{search}%", f"%{search}%"]
+    total = db.execute("SELECT COUNT(*) FROM hotels" + where, params).fetchone()[0]
+    rows = db.execute("SELECT * FROM hotels" + where + " LIMIT ? OFFSET ?", params + [size, offset]).fetchall()
+    items = [schemas.CanonicalHotelSummary(
+        id=row["id"], name=row["name"], address=row["address"], lat=row["lat"], lon=row["lon"],
+        stars=row["stars"], confidence=row["confidence"],
+    ) for row in rows]
+    return schemas.PaginatedHotels(items=items, total=total, page=page, size=size)
+
+
+@app.get("/v1/projects/{project_id}/hotels/{hotel_id}/room-matches", response_model=List[schemas.MatchedRoom])
+def project_room_matches(
+    project_id: str,
+    hotel_id: str,
+    _: None = Depends(require_project_key),
+    db: sqlite3.Connection = Depends(get_project_db),
+):
+    hotel = db.execute("SELECT source_a_id, source_b_id FROM hotels WHERE id = ?", (hotel_id,)).fetchone()
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    if not hotel["source_a_id"] or not hotel["source_b_id"]:
+        return []
+    rows = db.execute("""
+        SELECT rm.score, ra.room_id AS a_id, ra.name AS a_name, rb.room_id AS b_id, rb.name AS b_name
+        FROM room_matches rm
+        JOIN rooms ra ON ra.room_id = rm.room_a_id
+        JOIN rooms rb ON rb.room_id = rm.room_b_id
+        WHERE rm.hotel_a_id = ? AND rm.hotel_b_id = ?
+    """, (hotel["source_a_id"], hotel["source_b_id"])).fetchall()
+    return [schemas.MatchedRoom(
+        score=row["score"],
+        room_a=schemas.RoomDetail(id=row["a_id"], name=row["a_name"], capacity=None, bed_type=None, view=None, meal_plan=None, features=[], room_class=None),
+        room_b=schemas.RoomDetail(id=row["b_id"], name=row["b_name"], capacity=None, bed_type=None, view=None, meal_plan=None, features=[], room_class=None),
+    ) for row in rows]
 
 @app.get("/hotels", response_model=schemas.PaginatedHotels)
 def search_hotels(

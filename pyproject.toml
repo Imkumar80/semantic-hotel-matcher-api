@@ -1,5 +1,5 @@
 [project]
-name = "semantic-hotel-matcher-api"
+name = "semantic-entity-matcher"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -12,6 +12,7 @@ dependencies = [
     "pandas>=2.3.3",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
+    "python-multipart>=0.0.20",
     "pytest>=9.1.1",
     "pyyaml>=6.0.3",
     "rapidfuzz>=3.14.5",
@@ -21,4 +22,9 @@ dependencies = [
     "bharataddress>=0.4.0",
     "splink>=4.0.16",
     "duckdb>=1.5.5",
+    "openai>=1.63.2",
+    "anthropic>=0.49.0",
 ]
+
+[project.scripts]
+semantic-matcher = "semantic_entity_matcher.cli:main"

@@ -1,0 +1,26 @@
+entity_type: "hotels"
+id_column: "id"
+match_columns:
+  name:
+    type: "text"
+    normalizer: "text_normalizer"
+  address:
+    type: "text"
+    normalizer: "address_normalizer"
+  lat:
+    type: "numeric"
+    normalizer: "numeric_normalizer"
+  lon:
+    type: "numeric"
+    normalizer: "numeric_normalizer"
+strategy: "splink"
+matching:
+  auto_match_threshold: 0.85
+  min_score_threshold: 0.20
+output:
+  format: "sqlite"
+  include_near_misses: true
+llm:
+  enabled: true
+  provider: "gemini"
+  model: "gemini-2.5-flash"

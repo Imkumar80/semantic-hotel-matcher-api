@@ -1,0 +1,2 @@
+[console_scripts]
+semantic-matcher = semantic_entity_matcher.cli:main
